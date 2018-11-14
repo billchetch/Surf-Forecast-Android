@@ -106,7 +106,7 @@ public class MainActivity extends GenericActivity {
                 List<String> spinnerList = tc.convertList(locations);
 
                 Spinner locationsView = findViewById(R.id.surfLocation);
-                ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, R.layout.spinner_item, spinnerList);
+                ArrayAdapter<String> adapter = new ArrayAdapter<>(this, R.layout.spinner_item, spinnerList);
                 locationsView.setAdapter(adapter);
 
                 locationsView.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
@@ -157,7 +157,7 @@ public class MainActivity extends GenericActivity {
             return;
         }
 
-        //if here the forecast being set is different from the one that is already set (or it's the first forecast being set)
+        //if here the forecast being set is different from the one that is already set ... or it's the first forecast being set
         String s = "Updated ";
         TimeZone tz = TimeZone.getTimeZone("UTC");
         Calendar cal = Calendar.getInstance(tz);
