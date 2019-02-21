@@ -28,24 +28,9 @@ public class GenericActivity extends AppCompatActivity {
 
     protected boolean includeOptionsMenu = true;
     protected boolean includeLocation = true;
-    protected int timerDelay = 0; //timer delay in seconds (if positive then timer is created
 
     BroadcastReceiver receivePermissionRequests;
     BroadcastReceiver receiveLocationUpdates;
-
-    Handler timerHandler = new Handler();
-    Runnable timerRunnable = new Runnable() {
-        @Override
-        public void run() {
-            onTimer();
-
-            timerHandler.postDelayed(this, timerDelay*1000);
-        }
-    };
-
-    protected void onTimer(){
-        //Log.i("TIMER", "timer");
-    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -104,10 +89,6 @@ public class GenericActivity extends AppCompatActivity {
 
             startLocationUpdatesService();
         }
-
-        if(timerDelay > 0){
-            timerHandler.postDelayed(timerRunnable, 0);
-        }
     }
 
     private void startLocationUpdatesService(){
@@ -128,7 +109,6 @@ public class GenericActivity extends AppCompatActivity {
     @Override
     protected void onPause(){
         super.onPause();
-        timerHandler.removeCallbacks(timerRunnable);
     }
 
     @Override

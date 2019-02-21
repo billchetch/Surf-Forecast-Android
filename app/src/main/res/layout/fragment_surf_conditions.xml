@@ -11,25 +11,12 @@
         android:layout_height="match_parent"
         android:orientation="vertical">
 
-        <android.support.constraint.ConstraintLayout
-            android:id="@+id/overviewLayout"
+        <fragment
+            android:id="@+id/surfConditionsOverviewFragment"
+            android:name="com.bulan_baru.surf_forecast.SurfConditionsOverviewFragment"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_weight="0">
-
-            <TextView
-                android:id="@+id/overviewText"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@color/darkGrey"
-                android:gravity="center_vertical|center_horizontal"
-                android:padding="4dp"
-                android:text="Overview"
-                android:textColor="@color/mediumGrey"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
-        </android.support.constraint.ConstraintLayout>
+            android:layout_height="match_parent"
+            android:layout_weight="12" />
 
         <LinearLayout
             android:id="@+id/surfConditionsLayout"

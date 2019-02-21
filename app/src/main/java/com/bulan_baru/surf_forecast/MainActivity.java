@@ -82,11 +82,6 @@ public class MainActivity extends GenericActivity {
     }
 
     @Override
-    protected void onTimer(){
-        super.onTimer();
-    }
-
-    @Override
     public void onDeviceLocationUpdated(ClientDevice device){
         if(pauseLocationUpdates != null && Utils.dateDiff(Calendar.getInstance(), pauseLocationUpdates, TimeUnit.SECONDS) < 30){
             Log.i(LOG_TAG,"Location updates paused");
