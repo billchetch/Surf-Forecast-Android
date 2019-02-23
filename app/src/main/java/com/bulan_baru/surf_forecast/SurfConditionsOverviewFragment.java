@@ -32,7 +32,7 @@ public class SurfConditionsOverviewFragment extends Fragment implements OnClickL
     List<ForecastHour> forecastHours;
     GraphView graphView;
 
-    private int timerDelay = 10;
+    private int timerDelay = 30;
     Handler timerHandler = new Handler();
     Runnable timerRunnable = new Runnable() {
         @Override
@@ -46,6 +46,9 @@ public class SurfConditionsOverviewFragment extends Fragment implements OnClickL
     protected void onTimer(){
         Log.i("SCOF TIMER", "timer");
 
+        if(expanded){
+            collapse();
+        }
 
     }
 
@@ -102,7 +105,6 @@ public class SurfConditionsOverviewFragment extends Fragment implements OnClickL
         this.forecastDays = forecastDays;
         this.forecastHours = forecastHours;
 
-        ForecastHour firstHour = forecastHours.get(0);
         String timeFormat = "HH:mm";
         String firstAndLastLight = "";
         String tideData = "";
@@ -123,19 +125,34 @@ public class SurfConditionsOverviewFragment extends Fragment implements OnClickL
         TextView otv = view.findViewById(R.id.overviewText);
         otv.setText(overviewText);
 
+        //set graph stuff
+
+
     }
 
 
     @Override
     public void onClick(View v) {
-        expanded = !expanded;
+        if(expanded){
+            collapse();
+        } else {
+            expand();
+        }
+    }
+
+    public void expand(){
+        expand(true);
+    }
+
+    public void expand(boolean expand){
+        expanded = expand;
         LinearLayout.LayoutParams lp = (LinearLayout.LayoutParams)rootView.getLayoutParams();
 
         float scaleBy = 6.0f;
         lp.weight = expanded ? (1.0f/scaleBy)*lp.weight : scaleBy*lp.weight;
         rootView.setLayoutParams(lp);
 
-        ImageView iv = v.findViewById(R.id.expandIcon);
+        ImageView iv = rootView.findViewById(R.id.expandIcon);
 
         iv.setImageResource(expanded ? R.drawable.ic_round_expand_less_24px : R.drawable.ic_round_expand_more_24px);
 
@@ -150,5 +167,7 @@ public class SurfConditionsOverviewFragment extends Fragment implements OnClickL
         }
     }
 
-
+    public void collapse(){
+        expand(false);
+    }
 }
