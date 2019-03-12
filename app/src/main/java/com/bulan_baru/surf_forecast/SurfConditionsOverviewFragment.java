@@ -228,12 +228,10 @@ public class SurfConditionsOverviewFragment extends Fragment implements OnClickL
                     paint.setPathEffect(null);
                     canvas.drawPoint(xPos, yPos, paint);
 
-                    //if 'now' then draw marker
-                    if(isNow){
-                        canvas.drawLine(xPos, graphRect.top, xPos, graphRect.bottom, paint);
-                    }
+
                     //if first light or last light draw marker
                     if(xPos == xFirstLight || xPos == xLastLight){
+                        paint.setColor(Color.GRAY);
                         paint.setStrokeWidth(2f);
                         paint.setStyle(Paint.Style.FILL);
                         paint.setPathEffect(null);
@@ -245,7 +243,7 @@ public class SurfConditionsOverviewFragment extends Fragment implements OnClickL
                         canvas.drawText(label, xPos - textRect.width()/2 , graphRect.top - defaultMargin , paint);
                     }
 
-                    //draw the tide position indicator
+                    //draw the tide extreme position indicator
                     if(isLight && (x == 0 || (x == xMax - 1 && i == segments.size() - 1))){
                         boolean isLast = x == xMax - 1 && i == segments.size() - 1;
 
@@ -267,6 +265,19 @@ public class SurfConditionsOverviewFragment extends Fragment implements OnClickL
                         float textXOffset = isLast ? -textRect.width() : 0;
                         float textYOffset = (x == 0 ? segment.y1 : segment.y2) < 0 ? textRect.height() : 0;
                         canvas.drawText(label, xPos + xOffset + textXOffset, yPos + textYOffset, paint);
+                    }
+
+                    //if 'now' then draw marker
+                    if(isNow){
+                        paint.setColor(Color.LTGRAY);
+                        paint.setStyle(Paint.Style.FILL);
+                        paint.setStrokeWidth(2f);
+                        canvas.drawLine(xPos, yPos, xPos, graphRect.bottom, paint);
+
+                        String label = Utils.convert(y + segment.normalisedBy, Utils.Conversions.METERS_2_FEET, 0)+ "ft @ " + Utils.formatDate(now, TIME_FORMAT);
+                        Rect textRect = new Rect();
+                        paint.getTextBounds(label, 0, label.length(), textRect);
+                        canvas.drawText(label, xPos + -textRect.width()/2, yPos - 8, paint);
                     }
                 }
                 startX += xMax;
