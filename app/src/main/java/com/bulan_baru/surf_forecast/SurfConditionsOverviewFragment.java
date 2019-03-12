@@ -175,7 +175,7 @@ public class SurfConditionsOverviewFragment extends Fragment implements OnClickL
             paint.setTextSize(16);
 
             int defaultMargin = 16; //maybe make this settable
-            int topMargin = 64;
+            int topMargin = 54;
             int height = (canvas.getHeight() - topMargin)/length;
             int width = canvas.getWidth() - 2*defaultMargin;
             Rect graphRect = new Rect();
@@ -227,7 +227,6 @@ public class SurfConditionsOverviewFragment extends Fragment implements OnClickL
                     paint.setStrokeWidth(2f);
                     paint.setPathEffect(null);
                     canvas.drawPoint(xPos, yPos, paint);
-
 
                     //if first light or last light draw marker
                     if(xPos == xFirstLight || xPos == xLastLight){
@@ -382,7 +381,7 @@ public class SurfConditionsOverviewFragment extends Fragment implements OnClickL
         expanded = expand;
         LinearLayout.LayoutParams lp = (LinearLayout.LayoutParams)rootView.getLayoutParams();
 
-        float scaleBy = 8.0f*graphViews.size();
+        float scaleBy = 7.0f*graphViews.size();
         lp.weight = expanded ? (1.0f/scaleBy)*lp.weight : scaleBy*lp.weight;
         rootView.setLayoutParams(lp);
 
