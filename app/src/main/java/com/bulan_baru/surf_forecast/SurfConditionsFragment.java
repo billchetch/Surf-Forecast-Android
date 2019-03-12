@@ -10,31 +10,34 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.view.View.OnClickListener;
 
+import com.bulan_baru.surf_forecast_data.Forecast;
 import com.bulan_baru.surf_forecast_data.ForecastDay;
 import com.bulan_baru.surf_forecast_data.ForecastDetail;
 import com.bulan_baru.surf_forecast_data.ForecastHour;
 import com.bulan_baru.surf_forecast_data.utils.Utils;
 
 import java.util.List;
+import java.util.Calendar;
 
 public class SurfConditionsFragment extends Fragment {
-    private static final String LOG_TAG = "Surf Conditions Fragment";
+    private final static String LOG_TAG = "Surf Conditions Fragment";
+
+    private Forecast forecast;
+    private Calendar forecastDate;
     private List<ForecastHour> forecastHours;
     private List<ForecastDay> forecastDays;
     private static final String[] tidePositions = new String[]{"Low (rising)","Low to mid","Mid (rising)","Mid to high","High (rising)","High (dropping)","High to mid", "Mid (dropping)", "Mid to low", "Low (dropping)"};
     private static int[] starIDs = new int[]{R.id.star1, R.id.star2, R.id.star3, R.id.star4, R.id.star5};
-    private boolean overviewExpanded = false;
 
     public SurfConditionsFragment(){
         //empty constructor
     }
 
-    public void setForecastHours(List<ForecastHour> forecastHours){
-        this.forecastHours = forecastHours;
-    }
-
-    public void setForecastDays(List<ForecastDay> forecastDays){
-        this.forecastDays = forecastDays;
+    public void setForecast(Forecast forecast, Calendar cal, int steps, int minInterval, int maxInterval){
+        this.forecast = forecast;
+        this.forecastHours = forecast.getHoursSpread(cal, steps, minInterval, maxInterval);
+        this.forecastDays = forecast.getDays(forecastHours.get(0).date, forecastHours.get(forecastHours.size() - 1).date);
+        this.forecastDate = cal;
     }
 
     @Override
@@ -62,8 +65,7 @@ public class SurfConditionsFragment extends Fragment {
 
         //get the layout for the overview of conditions and add data
         SurfConditionsOverviewFragment scof = (SurfConditionsOverviewFragment)getChildFragmentManager().findFragmentById(R.id.surfConditionsOverviewFragment);
-        scof.setOverview(forecastDays, forecastHours);
-
+        scof.setOverview(forecast, forecastDays, forecastHours);
 
         //get the layout for the hours conditions and add fragments
         ViewGroup surfConditionsLayout = rootView.findViewById(R.id.surfConditionsLayout);

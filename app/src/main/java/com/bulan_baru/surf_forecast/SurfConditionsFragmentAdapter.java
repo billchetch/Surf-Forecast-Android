@@ -22,10 +22,12 @@ public class SurfConditionsFragmentAdapter extends FragmentPagerAdapter {
     private final static int MIN_INTERVAL = 4;
     private final static int MAX_INTERVAL = 6;
 
+
     private long baseTimeForId;
     private Context context;
     private Forecast forecast;
     private List<Calendar> dates;
+
 
     public SurfConditionsFragmentAdapter(Context context, FragmentManager fm) {
         super(fm);
@@ -80,12 +82,9 @@ public class SurfConditionsFragmentAdapter extends FragmentPagerAdapter {
     @Override
     public Fragment getItem(int position) {
         SurfConditionsFragment scf = new SurfConditionsFragment();
-        Calendar cal = dates.get(position);
-        List<ForecastHour> forecastHours = forecast.getHoursSpread(cal, STEPS, MIN_INTERVAL, MAX_INTERVAL);
-        List<ForecastDay> forecastDays = forecast.getDays(forecastHours.get(0).date, forecastHours.get(forecastHours.size() - 1).date);
 
-        scf.setForecastHours(forecastHours);
-        scf.setForecastDays(forecastDays);
+        Calendar cal = dates.get(position);
+        scf.setForecast(forecast, cal, STEPS, MIN_INTERVAL, MAX_INTERVAL);
         return scf;
     }
 
