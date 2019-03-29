@@ -108,9 +108,13 @@ public class Utils {
         if(newCal.get(Calendar.SECOND) != 0)newCal.set(Calendar.SECOND, 0);
         if(newCal.get(Calendar.MILLISECOND) != 0)newCal.set(Calendar.MILLISECOND, 0);
 
+        //TODO: verify this works
+        if(newCal.get(Calendar.DST_OFFSET) != 0)newCal.set(Calendar.DST_OFFSET, 0);
+
         return newCal;
     }
 
+    //TODO: handle DST (daylight savings) offset fro 'DAYS' measurement
     public static long dateDiff(Calendar cal1, Calendar cal2, TimeUnit timeUnit){
         long duration = cal1.getTimeInMillis() - cal2.getTimeInMillis();
         switch(timeUnit){
@@ -152,31 +156,44 @@ public class Utils {
         return cal.compareTo(cal1) >= 0 && cal.compareTo(cal2) <= 0;
     }
 
-    public static boolean isToday(Calendar cal){
-        Calendar cal1 = calendarSetHour(Calendar.getInstance(), 0);
+    public static boolean isToday(Calendar cal, Calendar now){
+        Calendar cal1 = calendarSetHour(now, 0);
         Calendar cal2 = (Calendar)cal1.clone();
         cal2.add(Calendar.DATE, 1);
         return dateInRange(cal, cal1, cal2);
+    }
+
+    public static boolean isToday(Calendar cal){
+        return isToday(cal, Calendar.getInstance());
     }
 
     public static boolean isToday(Date date){
         return isToday(date2cal(date));
     }
 
-    public static boolean isTomorrow(Calendar cal){
+    public static boolean isTomorrow(Calendar cal, Calendar now){
         Calendar c = (Calendar)cal.clone();
         c.add(Calendar.DATE, -1);
-        return isToday(c);
+        return isToday(c, now);
     }
+
+    public static boolean isTomorrow(Calendar cal){
+        return isTomorrow(cal, Calendar.getInstance());
+    }
+
 
     public static boolean isTomorrow(Date date){
         return isTomorrow(date2cal(date));
     }
 
-    public static boolean isYesterday(Calendar cal){
+    public static boolean isYesterday(Calendar cal, Calendar now){
         Calendar c = (Calendar)cal.clone();
         c.add(Calendar.DATE, 1);
-        return isToday(c);
+        return isToday(c, now);
+    }
+
+    public static boolean isYesterday(Calendar cal){
+        return isYesterday(cal, Calendar.getInstance());
     }
 
     public static boolean isYesterday(Date date){

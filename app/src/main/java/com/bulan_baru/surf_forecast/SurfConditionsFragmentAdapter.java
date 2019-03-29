@@ -72,11 +72,7 @@ public class SurfConditionsFragmentAdapter extends FragmentPagerAdapter {
         dates = Utils.getDates(startDate, forecast.getForecastTo());
         for(int i = 1; i < dates.size(); i++){
             firstLight = forecast.getFirstLight(dates.get(i));
-            if(firstLight != null) {
-                dates.set(i, Utils.calendarSetHour(firstLight, firstLight.get(Calendar.HOUR_OF_DAY) + 1));
-            } else {
-                //firstLight = forecast.getFirstLight(dates.get(i));
-            }
+            dates.set(i, Utils.calendarSetHour(firstLight, firstLight.get(Calendar.HOUR_OF_DAY) + 1));
         }
         notifyDataSetChanged();
     }

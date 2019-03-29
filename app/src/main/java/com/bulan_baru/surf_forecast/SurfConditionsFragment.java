@@ -26,7 +26,7 @@ public class SurfConditionsFragment extends Fragment {
     private Calendar forecastDate;
     private List<ForecastHour> forecastHours;
     private List<ForecastDay> forecastDays;
-    private static final String[] tidePositions = new String[]{"Low (rising)","Low to mid","Mid (rising)","Mid to high","High (rising)","High (dropping)","High to mid", "Mid (dropping)", "Mid to low", "Low (dropping)"};
+    private static final String[] tidePositions = new String[]{"Low (rising)","Low to Mid","Mid (rising)","Mid to High","High (rising)","High (dropping)","High to Mid", "Mid (dropping)", "Mid to Low", "Low (dropping)"};
     private static int[] starIDs = new int[]{R.id.star1, R.id.star2, R.id.star3, R.id.star4, R.id.star5};
 
     public SurfConditionsFragment(){
@@ -61,7 +61,7 @@ public class SurfConditionsFragment extends Fragment {
 
         // Inflate the layout for this fragment
         View rootView = inflater.inflate(R.layout.fragment_surf_conditions, container, false);
-        boolean startsToday = Utils.isToday(forecastHours.get(0).date);
+        boolean startsToday = Utils.isToday(forecastHours.get(0).date, forecast.now());
 
         //get the layout for the overview of conditions and add data
         SurfConditionsOverviewFragment scof = (SurfConditionsOverviewFragment)getChildFragmentManager().findFragmentById(R.id.surfConditionsOverviewFragment);
@@ -77,7 +77,7 @@ public class SurfConditionsFragment extends Fragment {
             try {
 
                 String title = Utils.formatDate(fh.date, "HH:mm");
-                if(startsToday && Utils.isTomorrow(fh.date)){
+                if(startsToday && Utils.isTomorrow(fh.date, forecast.now())){
                     title = "Tomorrow @ " + title;
                 }
 
@@ -107,6 +107,8 @@ public class SurfConditionsFragment extends Fragment {
 
                 String th = Utils.convert(Double.parseDouble(fh.getTideHeight()), Utils.Conversions.METERS_2_FEET, 0) + " ft";
                 String ts = fh.getTidePosition() != null ? tidePositions[fh.getTidePosition()] : "'";
+                iv = sc.findViewById(R.id.tideDirection);
+                iv.setRotation(fh.getTidePosition() < 5 ? 0f : 180f);
 
                 //set the display
                 ((TextView) sc.findViewById(R.id.conditionsTitle)).setText(title);
