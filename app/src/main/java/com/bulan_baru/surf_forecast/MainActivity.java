@@ -175,6 +175,12 @@ public class MainActivity extends GenericActivity {
             s = "Forecast expired ... " + s;
         }
 
+
+        if(forecast.now().getTimeZone().getRawOffset() != Calendar.getInstance().getTimeZone().getRawOffset()){
+            String stz = Utils.formatDate(forecast.now(), "Z");
+            s = "Forecast times @ " + stz + " GMT ........ " + s;
+        }
+
         TextView forecastInfo = findViewById(R.id.forecastInfo);
         forecastInfo.setText(s);
 

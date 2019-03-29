@@ -94,6 +94,7 @@ public class SurfConditionsOverviewFragment extends Fragment implements OnClickL
         private Typeface normalTypeFace = Typeface.create("Helvetica", Typeface.NORMAL);
         private Typeface boldTypeFace = Typeface.create("Helvetica", Typeface.BOLD);
 
+        private Forecast forecast;
         private int index;
         private int length;
         private Calendar firstLight;
@@ -102,9 +103,10 @@ public class SurfConditionsOverviewFragment extends Fragment implements OnClickL
         private long xLast;
 
 
-        public GraphView(Context context, int index, int length, Calendar firstLight, Calendar lastLight) {
+        public GraphView(Context context, int index, int length, Forecast forecast, Calendar firstLight, Calendar lastLight) {
             super(context);
 
+            this.forecast = forecast;
             this.index = index;
             this.length = length;
             this.firstLight = firstLight;
@@ -185,7 +187,7 @@ public class SurfConditionsOverviewFragment extends Fragment implements OnClickL
             graphRect.bottom = graphRect.top + height - 2*defaultMargin;
 
             //determine 'now' and 'first light' and 'last light'
-            Calendar now = Calendar.getInstance();
+            Calendar now = forecast.now();
             long nowInMillis = now.getTimeInMillis();
             int xNow = -1;
             if(xFirst <= nowInMillis && xLast >= nowInMillis){
@@ -323,7 +325,7 @@ public class SurfConditionsOverviewFragment extends Fragment implements OnClickL
             firstAndLastLight += " ";
             List<ForecastDetail.TideData> tData = fd.getTideData();
 
-            GraphView graphView = new GraphView(getActivity(), i, forecastDays.size(), fd.getFirstLight(), fd.getLastLight());
+            GraphView graphView = new GraphView(getActivity(), i, forecastDays.size(), forecast, fd.getFirstLight(), fd.getLastLight());
 
             ViewGroup g = (ViewGroup)rootView;
             g.addView(graphView);
@@ -339,7 +341,7 @@ public class SurfConditionsOverviewFragment extends Fragment implements OnClickL
 
                 //Sometimes the first light is prior to the first tide position (which will therefore be on the previous day)
                 if(j == 0 && td.time.getTimeInMillis() > fd.getFirstLight().getTimeInMillis()){
-                    Calendar calPrev = Calendar.getInstance();
+                    Calendar calPrev = forecast.now();
                     calPrev.setTimeInMillis(fd.date.getTimeInMillis() - 24*3600*1000);
                     ForecastDay pd = forecast.getDay(calPrev);
                     if(pd != null) {

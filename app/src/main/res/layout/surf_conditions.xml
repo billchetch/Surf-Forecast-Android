@@ -76,7 +76,7 @@
         android:layout_marginTop="4dp"
         android:text="Swell Height and Period"
         android:textColor="@color/lightGrey"
-        android:textSize="24sp"
+        android:textSize="26dp"
         android:textStyle="bold"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/textView" />
@@ -134,7 +134,7 @@
         android:layout_marginTop="4dp"
         android:text="Tide"
         android:textColor="@color/lightGrey"
-        android:textSize="24dp"
+        android:textSize="22dp"
         android:textStyle="bold"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/textView3" />
