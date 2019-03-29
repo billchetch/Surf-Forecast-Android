@@ -30,7 +30,7 @@ public class SurfConditionsFragment extends Fragment {
     private static int[] starIDs = new int[]{R.id.star1, R.id.star2, R.id.star3, R.id.star4, R.id.star5};
 
     public SurfConditionsFragment(){
-        //empty constructor
+        //empty constructor.
     }
 
     public void setForecast(Forecast forecast, Calendar cal, int steps, int minInterval, int maxInterval){
