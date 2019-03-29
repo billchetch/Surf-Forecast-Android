@@ -167,10 +167,10 @@ public class MainActivity extends GenericActivity {
             double days = Math.floor(hoursDiff/24);
             hoursDiff = hoursDiff - (long)days*24;
             s += Utils.round2string(days, 0) + (days > 1 ? " days" : " day");
-            s += " and " + hoursDiff + " hours ago";
+            s += (hoursDiff > 0 ? " and " + hoursDiff + " hours" : "") + " ago";
         }
 
-        boolean expired = Utils.dateDiff(cal, Utils.date2cal(forecast.getForecastTo())) > 0;
+        boolean expired = Utils.dateDiff(cal, forecast.getForecastTo()) > 0;
         if(expired){
             s = "Forecast expired ... " + s;
         }

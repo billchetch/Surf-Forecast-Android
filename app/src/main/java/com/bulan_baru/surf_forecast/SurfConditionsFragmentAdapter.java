@@ -46,7 +46,7 @@ public class SurfConditionsFragmentAdapter extends FragmentPagerAdapter {
 
         //use forecast period to set the 'days' the view can see
         //start by getting some important dates
-        Calendar startDate = Calendar.getInstance();
+        Calendar startDate = forecast.now(); //get 'now' with forecast timezone applied
         Calendar firstLight = forecast.getFirstLight(startDate);
         Calendar lastLight = forecast.getLastLight(startDate);
         Calendar tomorrow = (Calendar)startDate.clone();
@@ -69,10 +69,14 @@ public class SurfConditionsFragmentAdapter extends FragmentPagerAdapter {
         }
 
         //sanitise remaining days so they all start from first light
-        dates = Utils.getDates(startDate, Utils.date2cal(forecast.getForecastTo()));
+        dates = Utils.getDates(startDate, forecast.getForecastTo());
         for(int i = 1; i < dates.size(); i++){
             firstLight = forecast.getFirstLight(dates.get(i));
-            dates.set(i, Utils.calendarSetHour(firstLight, firstLight.get(Calendar.HOUR_OF_DAY) + 1));
+            if(firstLight != null) {
+                dates.set(i, Utils.calendarSetHour(firstLight, firstLight.get(Calendar.HOUR_OF_DAY) + 1));
+            } else {
+                //firstLight = forecast.getFirstLight(dates.get(i));
+            }
         }
         notifyDataSetChanged();
     }

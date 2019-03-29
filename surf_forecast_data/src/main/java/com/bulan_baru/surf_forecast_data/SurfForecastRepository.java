@@ -127,7 +127,8 @@ public class SurfForecastRepository{
                     new SurfForecastServiceCallback<Forecast>(liveDataServiceError) {
                         @Override
                         public void handleResponse(Call<Forecast> call, Response<Forecast> response) {
-                            forecast.setValue(response.body());
+                            Forecast f = (Forecast)response.body();
+                            forecast.setValue(f);
                         }
                     }
             );

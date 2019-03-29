@@ -96,13 +96,13 @@ public class SurfConditionsOverviewFragment extends Fragment implements OnClickL
 
         private int index;
         private int length;
-        private Date firstLight;
-        private Date lastLight;
+        private Calendar firstLight;
+        private Calendar lastLight;
         private long xFirst;
         private long xLast;
 
 
-        public GraphView(Context context, int index, int length, Date firstLight, Date lastLight) {
+        public GraphView(Context context, int index, int length, Calendar firstLight, Calendar lastLight) {
             super(context);
 
             this.index = index;
@@ -144,7 +144,7 @@ public class SurfConditionsOverviewFragment extends Fragment implements OnClickL
         }
 
         public GraphSegment addSegment(ForecastDetail.TideData td1, ForecastDetail.TideData td2){
-            GraphSegment sg = addSegment(td1.time.getTime(), td2.time.getTime(), td1.height, td2.height);
+            GraphSegment sg = addSegment(td1.time.getTimeInMillis(), td2.time.getTimeInMillis(), td1.height, td2.height);
             sg.label1 = Utils.convert(td1.height, Utils.Conversions.METERS_2_FEET, 0) + "ft @ " + Utils.formatDate(td1.time, TIME_FORMAT);
             sg.label2 = Utils.convert(td2.height, Utils.Conversions.METERS_2_FEET, 0) + "ft @ " + Utils.formatDate(td2.time, TIME_FORMAT);
             return sg;
@@ -191,9 +191,9 @@ public class SurfConditionsOverviewFragment extends Fragment implements OnClickL
             if(xFirst <= nowInMillis && xLast >= nowInMillis){
                 xNow = graphRect.left + (int)(((float)(nowInMillis - xFirst) / (float)(xLast - xFirst))*graphRect.width());
             }
-            long flInMillis = firstLight.getTime();
+            long flInMillis = firstLight.getTimeInMillis();
             int xFirstLight = graphRect.left + (int)(((float)(flInMillis - xFirst) / (float)(xLast - xFirst))*graphRect.width());
-            long llInMillis = lastLight.getTime();
+            long llInMillis = lastLight.getTimeInMillis();
             int xLastLight = graphRect.left + (int)(((float)(llInMillis - xFirst) / (float)(xLast - xFirst))*graphRect.width());
 
             //TODO: if this is one of two graphs then add label for today/tomorrow
@@ -234,7 +234,7 @@ public class SurfConditionsOverviewFragment extends Fragment implements OnClickL
                         paint.setStrokeWidth(2f);
                         paint.setStyle(Paint.Style.FILL);
                         paint.setPathEffect(null);
-                        Date date2use = xPos == xFirstLight ? firstLight : lastLight;
+                        Calendar date2use = xPos == xFirstLight ? firstLight : lastLight;
                         canvas.drawLine(xPos, graphRect.top, xPos, graphRect.bottom, paint);
                         String label = Utils.formatDate(date2use, TIME_FORMAT);
                         Rect textRect = new Rect();
@@ -338,9 +338,9 @@ public class SurfConditionsOverviewFragment extends Fragment implements OnClickL
                 tideData += " | ";
 
                 //Sometimes the first light is prior to the first tide position (which will therefore be on the previous day)
-                if(j == 0 && td.time.getTime() > fd.getFirstLight().getTime()){
+                if(j == 0 && td.time.getTimeInMillis() > fd.getFirstLight().getTimeInMillis()){
                     Calendar calPrev = Calendar.getInstance();
-                    calPrev.setTimeInMillis(fd.date.getTime() - 24*3600*1000);
+                    calPrev.setTimeInMillis(fd.date.getTimeInMillis() - 24*3600*1000);
                     ForecastDay pd = forecast.getDay(calPrev);
                     if(pd != null) {
                         List<ForecastDetail.TideData> ptd = pd.getTideData();

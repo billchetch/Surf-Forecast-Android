@@ -4,10 +4,12 @@ import com.bulan_baru.surf_forecast_data.utils.Utils;
 import com.google.gson.annotations.SerializedName;
 
 import java.text.DateFormat;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.TimeZone;
 import java.util.List;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
@@ -20,17 +22,66 @@ public class Forecast extends DataObject {
 
     @SerializedName("location_id")
     private int locationID;
+
+    @SerializedName("timezone")
+    private String timezone;
+    private TimeZone tz;
+
     @SerializedName("timezone_offset")
     private String timezoneOffset;
 
+    @SerializedName("timezone_offset_secs")
+    private int timezoneOffsetSecs;
+
     @SerializedName("forecast_from")
-    private Date forecastFrom;
+    private Calendar forecastFrom;
+
     @SerializedName("forecast_to")
-    private Date forecastTo;
+    private Calendar forecastTo;
 
     private TreeMap<String, ForecastHour> hours;
     private TreeMap<String, ForecastDay> days;
 
+    public TimeZone getTimeZone(){
+        if(tz == null)tz = TimeZone.getTimeZone(timezone);
+        return tz;
+    }
+
+    public Calendar now(){
+        Calendar cal = Calendar.getInstance();
+        cal.setTimeZone(getTimeZone());
+        return cal;
+    }
+
+    public void applyTimeZone(){
+        TimeZone z = getTimeZone();
+        forecastFrom.setTimeZone(z);
+        forecastTo.setTimeZone(z);
+
+        for(TreeMap.Entry<String,ForecastHour> entry : hours.entrySet()){
+            ForecastHour fh = entry.getValue();
+            try {
+                if (fh.date == null) {
+                    fh.date = Utils.parseDate(entry.getKey(), SurfForecastService.DATE_FORMAT);
+                }
+                fh.applyTimeZone(z);
+            } catch (ParseException e){
+
+            }
+        }
+
+        for(TreeMap.Entry<String,ForecastDay> entry : days.entrySet()){
+            ForecastDay fd = entry.getValue();
+            try {
+                if (fd.date == null) {
+                    fd.date = Utils.parseDate(entry.getKey(), SurfForecastService.DATE_ONLY_FORMAT);
+                }
+                fd.applyTimeZone(z);
+            } catch (ParseException e){
+
+            }
+        }
+    }
 
     public int getFeedRunID(){ return feedRunID; }
     public void setFeedRunID(int feedRunID){ this.feedRunID = feedRunID; }
@@ -41,11 +92,11 @@ public class Forecast extends DataObject {
         return created;
     }
 
-    public Date getForecastFrom() {
+    public Calendar getForecastFrom() {
         return forecastFrom;
     }
 
-    public Date getForecastTo() {
+    public Calendar getForecastTo() {
         return forecastTo;
     }
 
@@ -73,7 +124,8 @@ public class Forecast extends DataObject {
             addHours += Utils.dateDiff(newFrom, from, TimeUnit.HOURS);
             return getHoursSpread(newFrom, steps, minInterval, maxInterval, addHours);
         } else {
-            int remainingHours = lastLight.get(Calendar.HOUR_OF_DAY) - from.get(Calendar.HOUR_OF_DAY);
+            //int remainingHours = lastLight.get(Calendar.HOUR_OF_DAY) - from.get(Calendar.HOUR_OF_DAY);
+            int remainingHours = (int)Utils.hoursDiff(lastLight, from);
             List<Integer> intervals = new ArrayList<>();
             intervals.add(addHours);
             for(int trySteps = steps - 1; trySteps > 0; trySteps--){
@@ -108,7 +160,7 @@ public class Forecast extends DataObject {
 
     public List<ForecastHour> getHoursSpread(Calendar from, int steps, int minInterval, int maxInterval){
         //check first that the request lies in the forecast period
-        if(!Utils.dateInRange(from, Utils.date2cal(getForecastFrom()), Utils.date2cal(getForecastTo()))) {
+        if(!Utils.dateInRange(from, getForecastFrom(), getForecastTo())) {
             return null;
         }
 
@@ -130,7 +182,7 @@ public class Forecast extends DataObject {
         for(Calendar cal : calSpread) {
             for (int i = lastIndex; i < daylightHours.size(); i++) {
                 ForecastHour fh = daylightHours.get(i);
-                if(fh.date.compareTo(cal.getTime()) >= 0){
+                if(fh.date.compareTo(cal) >= 0){
                     hoursSpread.add(fh);
                     lastIndex = i;
                     break;
@@ -141,19 +193,13 @@ public class Forecast extends DataObject {
     }
 
     public List<ForecastHour> getHours(Calendar from, Calendar to){
-        DateFormat dateFormat = new SimpleDateFormat(SurfForecastService.DATE_FORMAT);
         ArrayList<ForecastHour> filteredHours = new ArrayList<>();
         if(hours == null)return filteredHours;
 
         for(TreeMap.Entry<String,ForecastHour> entry : hours.entrySet()){
             ForecastHour fh = entry.getValue();
-            try {
-                fh.date = dateFormat.parse(entry.getKey());
-                if (fh.date.compareTo(from.getTime()) >= 0 && fh.date.compareTo(to.getTime()) <= 0) {
-                    filteredHours.add(fh);
-                }
-            } catch (Exception e){
-
+            if(fh.date.compareTo(from) >= 0 && fh.date.compareTo(to) <= 0) {
+                filteredHours.add(fh);
             }
         }
         return filteredHours;
@@ -189,44 +235,31 @@ public class Forecast extends DataObject {
         return getFirstLight(Utils.date2cal(date));
     }
     public Calendar getFirstLight(Calendar cal){
-        //Calendar firstLight = Utils.calendarSetHour(cal, 6);
-        //return firstLight;
-
         ForecastDay fd = getDay(cal);
         if(fd != null){
-            return Utils.date2cal(fd.getFirstLight());
+            return fd.getFirstLight();
         } else {
             return null;
         }
     }
 
     public Calendar getLastLight(Calendar cal){
-        /*Calendar lastLight = Utils.calendarSetHour(cal, 18);
-        return lastLight;*/
-
         ForecastDay fd = getDay(cal);
         if(fd != null){
-            return Utils.date2cal(fd.getLastLight());
+            return fd.getLastLight();
         } else {
             return null;
         }
     }
 
     public List<ForecastDay> getDays(Calendar from, Calendar to) {
-        DateFormat dateFormat = new SimpleDateFormat(SurfForecastService.DATE_ONLY_FORMAT);
         ArrayList<ForecastDay> filteredDays = new ArrayList<>();
         if(days == null)return filteredDays;
 
         for(TreeMap.Entry<String,ForecastDay> entry : days.entrySet()){
             ForecastDay fd = entry.getValue();
-            try {
-                fd.date = dateFormat.parse(entry.getKey());
-                Calendar cal = Utils.date2cal(fd.date);
-                if(Utils.dateDiff(cal, from) >= 0 && Utils.dateDiff(to, cal) >= 0){
-                    filteredDays.add(fd);
-                }
-            } catch (Exception e){
-
+            if(Utils.dateDiff(fd.date, from) >= 0 && Utils.dateDiff(to, fd.date) >= 0){
+                filteredDays.add(fd);
             }
         }
         return filteredDays;

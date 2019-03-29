@@ -1,9 +1,12 @@
 package com.bulan_baru.surf_forecast_data;
 
+import com.bulan_baru.surf_forecast_data.utils.CalendarTypeAdapater;
+import com.bulan_baru.surf_forecast_data.utils.DelegateTypeAdapterFactory;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 import java.util.HashMap;
+import java.util.Calendar;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -61,8 +64,13 @@ public class SurfForecastServiceManager {
 
             OkHttpClient client = httpClient.build();
 
+            DelegateTypeAdapterFactory delegateTypeAdapterFactory = new DelegateTypeAdapterFactory();
+            delegateTypeAdapterFactory.addTypeAdapater(ForecastTypeAdapater.class);
+
             Gson gson = new GsonBuilder()
                     .setDateFormat(SurfForecastService.DATE_FORMAT)
+                    .registerTypeAdapter(Calendar.class, new CalendarTypeAdapater(SurfForecastService.DATE_FORMAT))
+                    .registerTypeAdapterFactory(delegateTypeAdapterFactory)
                     .create();
 
             Retrofit retrofit = new Retrofit.Builder()

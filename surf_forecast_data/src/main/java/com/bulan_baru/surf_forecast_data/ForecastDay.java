@@ -3,11 +3,14 @@ package com.bulan_baru.surf_forecast_data;
 import com.bulan_baru.surf_forecast_data.utils.Utils;
 import com.google.gson.annotations.SerializedName;
 
+import java.sql.Time;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.Calendar;
 import java.util.List;
+import java.util.TimeZone;
 
 public class ForecastDay extends ForecastDetail {
     @SerializedName("tide_extreme_type_1")
@@ -47,17 +50,24 @@ public class ForecastDay extends ForecastDetail {
     private WeightedDetail tideExtremeTime4;
 
     @SerializedName("first_light")
-    private Date firstLight;
+    private Calendar firstLight;
 
     @SerializedName("last_light")
-    private Date lastLight;
+    private Calendar lastLight;
+
+    @Override
+    public void applyTimeZone(TimeZone tz){
+        super.applyTimeZone(tz);
+
+        if(firstLight != null)firstLight.setTimeZone(tz);
+        if(lastLight != null)lastLight.setTimeZone(tz);
+    }
 
     public List<TideData> getTideData(){
         WeightedDetail[] weightedHeights = new WeightedDetail[]{tideExtremeHeight1, tideExtremeHeight2, tideExtremeHeight3, tideExtremeHeight4};
         WeightedDetail[] weightedTimes = new WeightedDetail[]{tideExtremeTime1, tideExtremeTime2, tideExtremeTime3, tideExtremeTime4};
         String[] tideExtremes = new String[]{tideExtremeType1, tideExtremeType2, tideExtremeType3, tideExtremeType4};
 
-        DateFormat dateFormat = new SimpleDateFormat(SurfForecastService.DATE_FORMAT);
         List<TideData> tideData = new ArrayList<>();
         for(int i = 0; i < weightedHeights.length; i++) {
             if(tideExtremes[i] == null || tideExtremes[i] == "")continue;
@@ -69,7 +79,8 @@ public class ForecastDay extends ForecastDetail {
             String[] keyParts = dt.split(" ");
             dt = keyParts[0] + " " + weightedTimes[i].getString() + " " + keyParts[1];
             try {
-                td.time = dateFormat.parse(dt);
+                td.time = Utils.parseDate(dt, SurfForecastService.DATE_FORMAT);
+                td.time.setTimeZone(getTimeZone());
                 tideData.add(td);
             } catch (Exception e){
 
@@ -79,10 +90,10 @@ public class ForecastDay extends ForecastDetail {
     }
 
 
-    public Date getFirstLight(){
+    public Calendar getFirstLight(){
         return firstLight;
     }
-    public Date getLastLight(){
+    public Calendar getLastLight(){
         return lastLight;
     }
 

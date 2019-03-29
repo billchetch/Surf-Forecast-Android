@@ -4,9 +4,12 @@ import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 
+import com.bulan_baru.surf_forecast_data.SurfForecastService;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -93,20 +96,18 @@ public class Utils {
     Date and Calendar methods
      */
     public static Calendar calendarSetHour(Calendar cal, int hour){
-        Calendar newCal = (Calendar)cal.clone();
+        Calendar newCal = calendarZeroTime(cal);
         newCal.set(Calendar.HOUR_OF_DAY, hour);
-        newCal.set(Calendar.MINUTE, 0);
-        newCal.set(Calendar.SECOND, 0);
-        newCal.set(Calendar.MILLISECOND, 0);
         return newCal;
     }
 
     public static Calendar calendarZeroTime(Calendar cal){
         Calendar newCal = (Calendar)cal.clone();
-        newCal.set(Calendar.HOUR_OF_DAY, 0);
-        newCal.set(Calendar.MINUTE, 0);
-        newCal.set(Calendar.SECOND, 0);
-        newCal.set(Calendar.MILLISECOND, 0);
+        if(newCal.get(Calendar.HOUR_OF_DAY) != 0)newCal.set(Calendar.HOUR_OF_DAY, 0);
+        if(newCal.get(Calendar.MINUTE) != 0)newCal.set(Calendar.MINUTE, 0);
+        if(newCal.get(Calendar.SECOND) != 0)newCal.set(Calendar.SECOND, 0);
+        if(newCal.get(Calendar.MILLISECOND) != 0)newCal.set(Calendar.MILLISECOND, 0);
+
         return newCal;
     }
 
@@ -134,7 +135,12 @@ public class Utils {
         return dateDiff(date2cal(d1), date2cal(d2), timeUnit);
     }
     public static long dateDiff(Calendar cal1, Calendar cal2){
-        return dateDiff(calendarZeroTime(cal1), calendarZeroTime(cal2), TimeUnit.DAYS);
+        Calendar cz1 = calendarZeroTime(cal1);
+        Calendar cz2 = calendarZeroTime(cal2);
+        return dateDiff(cz1, cz2, TimeUnit.DAYS);
+    }
+    public static long hoursDiff(Calendar cal1, Calendar cal2){
+        return dateDiff(cal1, cal2, TimeUnit.HOURS);
     }
 
     public static boolean dateInRange(Calendar cal, Calendar cal1, Calendar cal2){
@@ -208,7 +214,7 @@ public class Utils {
         if(tz != null){
             Calendar cal = Calendar.getInstance();
             cal.setTime(date);
-            cal.add(Calendar.MILLISECOND, tz.getOffset(cal.getTimeInMillis()));
+            sdf.setTimeZone(tz);
             return sdf.format(cal.getTime());
         } else {
             return sdf.format(date);
@@ -224,7 +230,12 @@ public class Utils {
     }
 
     public static String formatDate(Calendar cal, String format){
-        return formatDate(cal, format, null);
+        return formatDate(cal, format, cal.getTimeZone());
+    }
+
+    public static Calendar parseDate(String dateString, String format) throws java.text.ParseException{
+        DateFormat dateFormat = new SimpleDateFormat(format);
+        return Utils.date2cal(dateFormat.parse(dateString));
     }
 
     public static boolean isNetworkAvailable(Context context){
