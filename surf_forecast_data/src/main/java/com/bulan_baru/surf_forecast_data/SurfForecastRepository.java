@@ -46,7 +46,18 @@ public class SurfForecastRepository{
             serviceAvailable = false;
         }
         if(t instanceof SurfForecastServiceException){
-            serviceAvailable = false;
+            int httpCode = ((SurfForecastServiceException) t).getHttpCode();
+            switch(httpCode){
+                case 404:
+                    serviceAvailable = true; break;
+
+                case 500:
+                    serviceAvailable = true; break;
+
+                default:
+                    serviceAvailable = false; break;
+
+            }
         }
         Log.e(LOG_TAG, t.getMessage() != null ? t.getMessage() : "no error message available");
     }

@@ -2,6 +2,9 @@ package com.bulan_baru.surf_forecast_data;
 
 import android.arch.lifecycle.MutableLiveData;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -34,7 +37,7 @@ public class SurfForecastServiceCallback<T> implements Callback<T> {
     }
 
     public void handleResponse(Call<T> call, Response<T> response){
-
+        //stub to override
     }
 
     public void handleEmptyResponse(Call<T> call, Response<T> response){
@@ -46,11 +49,8 @@ public class SurfForecastServiceCallback<T> implements Callback<T> {
 
     public void handleError(Call<T> call, Response<T> response){
         if(liveDataError != null) {
-            try {
-                liveDataError.setValue(new SurfForecastServiceException(response.errorBody().string(), response.code()));
-            } catch (Exception e){
-                //do nothing
-            }
+            SurfForecastServiceException sfex = SurfForecastServiceException.create(response);
+            liveDataError.setValue(sfex);
         }
     }
 
