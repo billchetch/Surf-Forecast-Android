@@ -214,7 +214,6 @@ public class SurfConditionsOverviewFragment extends Fragment implements OnClickL
         }
 
 
-
         @Override
         protected void onDraw(Canvas canvas) {
             super.onDraw(canvas);
@@ -239,7 +238,7 @@ public class SurfConditionsOverviewFragment extends Fragment implements OnClickL
             Calendar now = forecast.now();
             long nowInMillis = now.getTimeInMillis();
             double xScaleMillis2Points = (double)graphRect.width() / (double)Utils.DAY_IN_MILLIS;
-            double yScale2Points = graphRect.height() / maxAmplitude;
+            double yScale2Points = graphRect.height() / forecast.getMaxTidalVariation();
             long xFirstLight = (long)((firstLight.getTimeInMillis() - firstHour.getTimeInMillis()) * xScaleMillis2Points);
             long xLastLight = (long)((lastLight.getTimeInMillis() - firstHour.getTimeInMillis()) * xScaleMillis2Points);
 
@@ -327,6 +326,8 @@ public class SurfConditionsOverviewFragment extends Fragment implements OnClickL
 
                 float x = (float)((double)(segment.x1 - firstHour.getTimeInMillis()) * xScaleMillis2Points);
                 x = x + graphRect.left;
+                if(x < graphRect.left)continue;
+
                 float y = (float)((segment.y1  + segment.normalisedBy)* yScale2Points);
                 y = graphRect.bottom - y;
                 float stopY = y + segment.phaseShift*defaultMargin;
@@ -339,7 +340,7 @@ public class SurfConditionsOverviewFragment extends Fragment implements OnClickL
                 Rect textRect = new Rect();
                 paint.getTextBounds(label, 0, label.length(), textRect);
                 stopY = stopY + (segment.phaseShift == 1 ? textRect.height() : 0);
-                canvas.drawText(label, x - textRect.width()/2, stopY, paint);
+                canvas.drawText(label, Math.max(graphRect.left, x - textRect.width()/2), stopY, paint);
             }
 
             //finally draw 'now' if relevant
@@ -418,7 +419,7 @@ public class SurfConditionsOverviewFragment extends Fragment implements OnClickL
             if(pfd != null){
                 tData.add(0, pfd.getTideData().get(pfd.getTideData().size() - 1));
             } else {
-                //TODO:
+                //TODO: handle the case of no previous day available
             }
 
             cal.add(Calendar.DATE, 2);
@@ -426,7 +427,7 @@ public class SurfConditionsOverviewFragment extends Fragment implements OnClickL
             if(nfd != null){
                 tData.add(nfd.getTideData().get(0));
             } else {
-                //TODO:
+                //TODO: handle the case of no next day available
             }
 
             GraphView graphView = new GraphView(getActivity(), i, forecastDays.size(), forecast, fd.getFirstLight(), fd.getLastLight());

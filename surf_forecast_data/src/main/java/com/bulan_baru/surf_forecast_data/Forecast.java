@@ -15,6 +15,8 @@ import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 
 public class Forecast extends DataObject {
+    public static double MAX_TIDAL_VARIATION_DEFAULT = 3.0; //default value in m
+
     @SerializedName("feed_run_id")
     private int feedRunID;
 
@@ -22,6 +24,9 @@ public class Forecast extends DataObject {
 
     @SerializedName("location_id")
     private int locationID;
+
+    @SerializedName("max_tidal_variation")
+    private double maxTidalVariation;
 
     @SerializedName("timezone")
     private String timezone;
@@ -45,6 +50,10 @@ public class Forecast extends DataObject {
     public TimeZone getTimeZone(){
         if(tz == null)tz = TimeZone.getTimeZone(timezone);
         return tz;
+    }
+
+    public double getMaxTidalVariation(){
+        return maxTidalVariation == 0 ? MAX_TIDAL_VARIATION_DEFAULT : maxTidalVariation;
     }
 
     public Calendar now(){
