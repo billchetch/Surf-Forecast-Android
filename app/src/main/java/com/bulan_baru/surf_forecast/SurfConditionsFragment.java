@@ -78,7 +78,7 @@ public class SurfConditionsFragment extends Fragment {
 
                 String title = Utils.formatDate(fh.date, "HH:mm");
                 if(startsToday && Utils.isTomorrow(fh.date, forecast.now())){
-                    title = "Tomorrow @ " + title;
+                    title = title + " (+1 day)";
                 }
 
                 Integer rating = 0;
@@ -106,7 +106,7 @@ public class SurfConditionsFragment extends Fragment {
                 String wd = Utils.convert(deg, Utils.Conversions.DEG_2_COMPASS) + " (" + deg + " deg)";
 
                 String th = Utils.convert(Double.parseDouble(fh.getTideHeight()), Utils.Conversions.METERS_2_FEET, 0) + " ft";
-                String ts = fh.getTidePosition() != null ? tidePositions[fh.getTidePosition()] : "'";
+                String ts = fh.getTidePosition() != null ? tidePositions[fh.getTidePosition()] : "";
                 iv = sc.findViewById(R.id.tideDirection);
                 iv.setRotation(fh.getTidePosition() < 5 ? 0f : 180f);
 

@@ -32,6 +32,12 @@ public class SurfForecastServiceException extends Exception {
         return sfex;
     }
 
+    public static SurfForecastServiceException create(Response<?> response, int errorCode){
+        SurfForecastServiceException sfex = create(response);
+        sfex.setErrorCode(errorCode);
+        return sfex;
+    }
+
     private int errorCode;
     private int httpCode;
 
@@ -43,5 +49,6 @@ public class SurfForecastServiceException extends Exception {
 
     public void setHttpCode(int hc){ this.httpCode = hc; }
     public int getHttpCode(){ return httpCode; }
+    public void setErrorCode(int errorCode){ this.errorCode = errorCode; }
     public int getErrorCode(){ return errorCode; }
 }

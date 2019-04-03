@@ -83,7 +83,7 @@ abstract public class LocationService extends Service {
         //create a repository instance to save device and location data
         repository = DaggerRepositoryComponent.builder().build().getRepository();
 
-        repository.serviceError().observeForever(t->{
+        repository.repositoryError().observeForever(t->{
             handleServiceError(ERROR_REPOSITORY, t);
         });
 

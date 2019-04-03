@@ -6,9 +6,10 @@ import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatDialogFragment;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.widget.TextView;
 
-public class ErrorDialogFragment extends AppCompatDialogFragment {
+public class ErrorDialogFragment extends AppCompatDialogFragment implements OnClickListener {
 
     private int errorType;
     private String errorMessage;
@@ -17,6 +18,8 @@ public class ErrorDialogFragment extends AppCompatDialogFragment {
         this.errorType = errorType;
         this.errorMessage = errorMessage;
     }
+
+    public int getErrorType(){ return errorType; }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -42,7 +45,15 @@ public class ErrorDialogFragment extends AppCompatDialogFragment {
         builder.setView(contentView)
                 .setTitle(getString(R.string.app_name) + " error!");
 
+        contentView.setOnClickListener(this);
+
         // Create the AlertDialog object and return it
         return builder.create();
     }
+
+    @Override
+    public void onClick(View v){
+        dismiss();
+    }
+
 }

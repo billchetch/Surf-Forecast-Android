@@ -32,6 +32,10 @@ public class Utils {
     final private static String CHECK_INTERNET_HOST = "www.google.com";
     final private static int CHECK_INTERNET_PORT = 80;
 
+    final public static int HOUR_IN_MILLIS = 3600*1000;
+    final public static int DAY_IN_MILLIS = 24*3600*1000;
+
+
     public static String convert(String val, Conversions conversion, int dp){
         if(val == null)return val;
 

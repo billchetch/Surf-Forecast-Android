@@ -19,6 +19,8 @@ import android.view.View;
 import android.widget.ProgressBar;
 
 import com.bulan_baru.surf_forecast_data.ClientDevice;
+import com.bulan_baru.surf_forecast_data.SurfForecastRepository;
+import com.bulan_baru.surf_forecast_data.SurfForecastRepositoryException;
 import com.bulan_baru.surf_forecast_data.utils.Utils;
 
 public class GenericActivity extends AppCompatActivity {
@@ -28,6 +30,8 @@ public class GenericActivity extends AppCompatActivity {
 
     protected boolean includeOptionsMenu = true;
     protected boolean includeLocation = true;
+
+    private DialogFragment errorDialog;
 
     BroadcastReceiver receivePermissionRequests;
     BroadcastReceiver receiveLocationUpdates;
@@ -134,9 +138,19 @@ public class GenericActivity extends AppCompatActivity {
         }
     }
 
-    protected void handleRepositoryError(Throwable t){
-        showError(0, t.getMessage());
-        Log.e("ERROR", t.getMessage());
+    protected void handleRepositoryError(SurfForecastRepositoryException t){
+        String message;
+        switch(t.getErrorCode()){
+            case SurfForecastRepository.ERROR_FORECAST_FOR_LOCATION_NOT_AVAILABLE:
+                message = "There is currently no forecast data for this location.  Please try again later";
+                break;
+
+            default:
+                message = t.getMessage();
+                break;
+        }
+
+        showError(t.getErrorCode(), message);
     }
 
     protected void handleGeneralError(Throwable t){
@@ -192,10 +206,11 @@ public class GenericActivity extends AppCompatActivity {
         dialog.show(getSupportFragmentManager(), "AboutDialog");
     }
 
-    public void showError(int errorType, String errorMessage){
+    public void showError(int errorCode, String errorMessage){
         Log.e("GAERROR", errorMessage);
-        DialogFragment dialog = new ErrorDialogFragment(errorType, errorMessage);
-        dialog.show(getSupportFragmentManager(), "ErrorDialog");
+        hideProgress();
+        errorDialog = new ErrorDialogFragment(errorCode, errorMessage);
+        errorDialog.show(getSupportFragmentManager(), "ErrorDialog");
     }
 
     public void showProgress(int visibility){

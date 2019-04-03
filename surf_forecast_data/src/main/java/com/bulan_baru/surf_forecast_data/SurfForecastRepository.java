@@ -17,6 +17,9 @@ import retrofit2.Response;
 
 @Singleton
 public class SurfForecastRepository{
+    public static final int ERROR_LOCATIONS_AVAILBLE = 2;
+    public static final int ERROR_FORECAST_FOR_LOCATION_NOT_AVAILABLE = 3;
+
     private static final String LOG_TAG = "SF Repo";
 
     private SurfForecastServiceManager serviceManager;
@@ -27,7 +30,10 @@ public class SurfForecastRepository{
 
     //so that we can observe over time
     private final MutableLiveData<Throwable> liveDataServiceError = new MutableLiveData<>();
+    private final MutableLiveData<SurfForecastRepositoryException> liveDataRepositoryError = new MutableLiveData<>();
     private final MutableLiveData<ClientDevice> liveDataDevice = new MutableLiveData<>();
+
+
 
     @Inject
     SurfForecastRepository(ClientDevice device, SurfForecastServiceManager serviceManager){
@@ -36,18 +42,20 @@ public class SurfForecastRepository{
 
         liveDataDevice.setValue(device);
 
-        serviceError().observeForever(t->{
+        liveDataServiceError.observeForever(t->{
             handleServiceError(t);
         });
     }
 
     protected void handleServiceError(Throwable t){
+        int errorCode = 0;
         if(t instanceof SocketTimeoutException){
             serviceAvailable = false;
         }
         if(t instanceof SurfForecastServiceException){
-            int httpCode = ((SurfForecastServiceException) t).getHttpCode();
-            switch(httpCode){
+            SurfForecastServiceException sfsx = ((SurfForecastServiceException) t);
+            errorCode = sfsx.getErrorCode();
+            switch(sfsx.getHttpCode()){
                 case 404:
                     serviceAvailable = true; break;
 
@@ -59,7 +67,11 @@ public class SurfForecastRepository{
 
             }
         }
+
         Log.e(LOG_TAG, t.getMessage() != null ? t.getMessage() : "no error message available");
+
+        //now we set the geenral repository error using service error exception data
+        liveDataRepositoryError.setValue(new SurfForecastRepositoryException(t.getMessage(), errorCode));
     }
 
     protected boolean isServiceAvailable(){ return serviceAvailable; }
@@ -79,7 +91,7 @@ public class SurfForecastRepository{
 
     public ClientDevice getClientDevice(){ return this.device; }
 
-    public LiveData<Throwable> serviceError(){ return liveDataServiceError; }
+    public LiveData<SurfForecastRepositoryException> repositoryError(){ return liveDataRepositoryError; }
 
     public void setUseDeviceLocation(boolean useDeviceLocation){ this.useDeviceLocation = useDeviceLocation; }
     public void setMaxDistance(float maxDistance){ this.maxDistance = maxDistance; }
@@ -140,6 +152,12 @@ public class SurfForecastRepository{
                         public void handleResponse(Call<Forecast> call, Response<Forecast> response) {
                             Forecast f = (Forecast)response.body();
                             forecast.setValue(f);
+                        }
+
+                        @Override
+                        public void handleError(Call<Forecast> call, Response<Forecast> response) {
+                            SurfForecastServiceException sfsx = SurfForecastServiceException.create(response, ERROR_FORECAST_FOR_LOCATION_NOT_AVAILABLE);
+                            handleServiceError(sfsx);
                         }
                     }
             );

@@ -5,8 +5,22 @@ import java.util.TimeZone;
 import java.util.Calendar;
 
 public class ForecastDetail extends DataObject {
-    public Calendar date;
-    private TimeZone tz;
+
+    public static TideData createTideData(TideData td){
+        TideData ntd = new TideData();
+        ntd.position = td.position;
+        ntd.time = td.time;
+        ntd.interpolated = td.interpolated;
+        ntd.height = td.height;
+        return ntd;
+    }
+
+    public static class TideData{
+        public Calendar time;
+        public double height;
+        public String position;
+        public boolean interpolated = false;
+    }
 
     class WeightedDetail{
         private String weighted_values;
@@ -18,12 +32,8 @@ public class ForecastDetail extends DataObject {
         }
     }
 
-    public class TideData{
-        public Calendar time;
-        public double height;
-        public String position;
-        public boolean interpolated = false;
-    }
+    public Calendar date;
+    private TimeZone tz;
 
     public TimeZone getTimeZone(){
         return tz;

@@ -16,6 +16,7 @@ import android.widget.TextView;
 import com.bulan_baru.surf_forecast_data.ClientDevice;
 import com.bulan_baru.surf_forecast_data.Forecast;
 import com.bulan_baru.surf_forecast_data.Location;
+import com.bulan_baru.surf_forecast_data.SurfForecastRepository;
 import com.bulan_baru.surf_forecast_data.utils.TypeConverter;
 import com.bulan_baru.surf_forecast_data.utils.Utils;
 
@@ -26,10 +27,13 @@ import java.util.concurrent.TimeUnit;
 
 public class MainActivity extends GenericActivity {
     private static final String LOG_TAG = "Main";
+
+    private int currentLocationID;
     private Forecast currentForecast;
     private SurfConditionsFragmentAdapter surfConditionsAdapter;
     private Calendar forecastLastDisplayed;
     private Calendar pauseLocationUpdates;
+    private boolean noForecastForLocationError = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -60,6 +64,15 @@ public class MainActivity extends GenericActivity {
         showSurfConditions();
     }
 
+    @Override
+    public void showError(int errorCode, String errorMessage){
+        Log.e("GAERROR", errorMessage);
+        if(errorCode == SurfForecastRepository.ERROR_FORECAST_FOR_LOCATION_NOT_AVAILABLE){
+            noForecastForLocationError = true;
+        }
+        super.showError(errorCode, errorMessage);
+    }
+
     private void showSurfConditions(int visibility){
         ViewPager viewPager = findViewById(R.id.viewPager);
         viewPager.setVisibility(visibility);
@@ -80,6 +93,7 @@ public class MainActivity extends GenericActivity {
         viewModel = ViewModelProviders.of(this).get(MainViewModel.class);
         super.initViewModel(savedInstanceState);
     }
+
 
     @Override
     public void onDeviceLocationUpdated(ClientDevice device){
@@ -128,13 +142,23 @@ public class MainActivity extends GenericActivity {
     }
 
     protected void getForecastForLocation(int locationID){
+        //if the current forecast is for the same location then don't immediately go and get a new forecast
+        //instead wait X minutes before doing so
+        //TODO: make X a setting
         if(currentForecast != null && currentForecast.getLocationID() == locationID && Utils.dateDiff(Calendar.getInstance(), forecastLastDisplayed, TimeUnit.MINUTES) < 20){
             return;
         }
 
+        //if there is a request to get the forecast for the same location that produced a noForecastForLocation error then return instead
+        if(currentLocationID == locationID && noForecastForLocationError){
+            return;
+        }
+
+        currentLocationID = locationID;
+        noForecastForLocationError = false;
         hideSurfConditions();
         showProgress();
-        ((MainViewModel)viewModel).getForecast(locationID).observe(this, forecast -> {
+        ((MainViewModel)viewModel).getForecast(currentLocationID).observe(this, forecast -> {
 
             //save forecast for use elsewhere and update forecast freshness
             setCurrentForecast(forecast);

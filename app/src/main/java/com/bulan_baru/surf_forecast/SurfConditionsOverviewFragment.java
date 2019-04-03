@@ -3,6 +3,7 @@ package com.bulan_baru.surf_forecast;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.DashPathEffect;
+import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.Typeface;
 import android.os.Bundle;
@@ -23,6 +24,7 @@ import com.bulan_baru.surf_forecast_data.Forecast;
 import com.bulan_baru.surf_forecast_data.ForecastDay;
 import com.bulan_baru.surf_forecast_data.ForecastDetail;
 import com.bulan_baru.surf_forecast_data.ForecastHour;
+import com.bulan_baru.surf_forecast_data.SurfForecastService;
 import com.bulan_baru.surf_forecast_data.utils.Utils;
 
 import java.util.Calendar;
@@ -34,6 +36,7 @@ import java.util.ArrayList;
 public class SurfConditionsOverviewFragment extends Fragment implements OnClickListener{
 
     public static String TIME_FORMAT = "HH:mm";
+    public static String DATE_FORMAT = "EEE, d MMM";
 
     private View rootView;
     private boolean expanded = false;
@@ -76,6 +79,7 @@ public class SurfConditionsOverviewFragment extends Fragment implements OnClickL
         double amplitude = 0.0;
         String label1;
         String label2;
+        int index; //position of this segment in teh list of segments that make up a graph
 
         public GraphSegment(long x1, long x2, double y1, double y2){
             this.x1 = x1;
@@ -84,6 +88,19 @@ public class SurfConditionsOverviewFragment extends Fragment implements OnClickL
             this.y2 = y2;
             this.phaseShift = y1 > y2 ? 1 : -1;
             this.amplitude = Math.abs(y2 - y1);
+        }
+
+        public double getY(long x) throws Exception{
+            if(!normalised)throw new Exception("Segment is not normalised"); //TODO: throw error
+            if(x < x1 || x > x2)throw new Exception("x is out of bounds");
+
+            long dist = x - x1;
+            double gradient = (y1 < 0 ? -1 : 1) * ((double)(Math.abs(y2) - Math.abs(y1)) / (double)(x2 - x1));
+            double theta = Math.PI*((double)(dist)/(double)(x2 - x1));
+
+            double y = ((gradient * dist) + y1) * Math.cos(theta);
+
+            return y;
         }
     }
 
@@ -101,7 +118,11 @@ public class SurfConditionsOverviewFragment extends Fragment implements OnClickL
         private Calendar lastLight;
         private long xFirst;
         private long xLast;
+        Calendar firstHour; //00:00 on the same day as first light
+        Calendar lastHour; //23:59 on the same day as first light
+        double maxAmplitude;
 
+        String title;
 
         public GraphView(Context context, int index, int length, Forecast forecast, Calendar firstLight, Calendar lastLight) {
             super(context);
@@ -111,10 +132,25 @@ public class SurfConditionsOverviewFragment extends Fragment implements OnClickL
             this.length = length;
             this.firstLight = firstLight;
             this.lastLight = lastLight;
+
+            firstHour = Utils.calendarZeroTime(firstLight);
+            lastHour = (Calendar) firstHour.clone();
+            lastHour.add(Calendar.DATE, 1);
+            lastHour.setTimeInMillis(lastHour.getTimeInMillis() - 1);
+
+            if (Utils.isToday(firstLight, forecast.now())) {
+                title = "Today";
+            } else if(Utils.isTomorrow(firstLight, forecast.now())){
+                title = "Tomorrow";
+            } else {
+                title = Utils.formatDate(firstLight, DATE_FORMAT);
+            }
         }
 
         public GraphSegment addSegment(GraphSegment segment){
+            segment.index = segments.size();
             segments.add(segment);
+
             long totalXDist = 0;
             double totalY = 0;
             double maxY = 0.0;
@@ -129,12 +165,13 @@ public class SurfConditionsOverviewFragment extends Fragment implements OnClickL
             double maxAmplitude = Math.abs(maxY - minY);
             for(GraphSegment sg : segments) {
                 sg.xWeight = (double) (sg.x2 - sg.x1) / (double) totalXDist;
-                sg.baseline = totalY / (2.0*(double)segments.size());
+                sg.baseline = totalY / (2.0*(double)segments.size()); //calculated average to produce mean center line
                 sg.yWeight = sg.amplitude / maxAmplitude;
             }
 
             xFirst = segments.get(0).x1;
             xLast = segments.get(segments.size() - 1).x2;
+            this.maxAmplitude = maxAmplitude;
 
             return segment;
         }
@@ -156,9 +193,18 @@ public class SurfConditionsOverviewFragment extends Fragment implements OnClickL
             return segments;
         }
 
+        public GraphSegment getSegment(long x){
+            for(GraphSegment sg : segments){
+                if(sg.x1 <= x && sg.x2 >= x)return sg;
+            }
+            return null;
+        }
+
+        //moves all points to a zero line (baseLine)
         public void normaliseSegments(){
             for(GraphSegment sg : segments){
                 if(sg.normalised)continue;
+
                 sg.y1 = sg.y1 - sg.baseline;
                 sg.y2 = sg.y2 - sg.baseline;
                 sg.normalised = true;
@@ -166,6 +212,8 @@ public class SurfConditionsOverviewFragment extends Fragment implements OnClickL
                 sg.baseline = 0;
             }
         }
+
+
 
         @Override
         protected void onDraw(Canvas canvas) {
@@ -176,6 +224,7 @@ public class SurfConditionsOverviewFragment extends Fragment implements OnClickL
             paint.setTypeface(boldTypeFace);
             paint.setTextSize(16);
 
+            //we determine the area the graph will take up .. the graph draws from '00:00:00 to 23:59:59...'
             int defaultMargin = 16; //maybe make this settable
             int topMargin = 54;
             int height = (canvas.getHeight() - topMargin)/length;
@@ -184,105 +233,48 @@ public class SurfConditionsOverviewFragment extends Fragment implements OnClickL
             graphRect.left = defaultMargin;
             graphRect.right = graphRect.left + width;
             graphRect.top =  topMargin + index*height + defaultMargin;
-            graphRect.bottom = graphRect.top + height - 2*defaultMargin;
+            graphRect.bottom = graphRect.top + height - 3*defaultMargin;
 
-            //determine 'now' and 'first light' and 'last light'
+            //determine 'now' and 'first light' and 'last light' positions
             Calendar now = forecast.now();
             long nowInMillis = now.getTimeInMillis();
-            int xNow = -1;
-            if(xFirst <= nowInMillis && xLast >= nowInMillis){
-                xNow = graphRect.left + (int)(((float)(nowInMillis - xFirst) / (float)(xLast - xFirst))*graphRect.width());
-            }
-            long flInMillis = firstLight.getTimeInMillis();
-            int xFirstLight = graphRect.left + (int)(((float)(flInMillis - xFirst) / (float)(xLast - xFirst))*graphRect.width());
-            long llInMillis = lastLight.getTimeInMillis();
-            int xLastLight = graphRect.left + (int)(((float)(llInMillis - xFirst) / (float)(xLast - xFirst))*graphRect.width());
-
-            //TODO: if this is one of two graphs then add label for today/tomorrow
+            double xScaleMillis2Points = (double)graphRect.width() / (double)Utils.DAY_IN_MILLIS;
+            double yScale2Points = graphRect.height() / maxAmplitude;
+            long xFirstLight = (long)((firstLight.getTimeInMillis() - firstHour.getTimeInMillis()) * xScaleMillis2Points);
+            long xLastLight = (long)((lastLight.getTimeInMillis() - firstHour.getTimeInMillis()) * xScaleMillis2Points);
 
             //draw daylight rect
             paint.setStyle(Paint.Style.FILL);
             paint.setColor(Color.DKGRAY);
-            canvas.drawRect(Math.max(xFirstLight, graphRect.left), graphRect.top, Math.min(xLastLight, graphRect.right), graphRect.bottom, paint);
+            canvas.drawRect(xFirstLight + graphRect.left, graphRect.top, xLastLight + graphRect.left, graphRect.bottom, paint);
 
-            //draw graph
-            double yScale = 0.0;
-            int startX = graphRect.left;
+
+            GraphSegment segment = null;
             normaliseSegments();
-            for(int i = 0; i < segments.size(); i++){
-                GraphSegment segment = segments.get(i);
-                if(yScale == 0)yScale = graphRect.height() / (segment.amplitude/segment.yWeight);
-                int xMax = (int)(segment.xWeight * graphRect.width());
-                double gradient = (segment.y1 < 0 ? -1 : 1) * (Math.abs(segment.y2) - Math.abs(segment.y1)) / (double)xMax;
-
-                for(int x = 0; x < xMax; x++) {
-                    //draw the graph point
-                    double theta = Math.PI*((double)x/(double)xMax);
-                    double y = (gradient * x + segment.y1) * Math.cos(theta);
-                    float xPos = (float)(startX + x);
-                    float yPos = (float)(graphRect.bottom - yScale*segment.normalisedBy - yScale*y);
-
-                    boolean isNow = (int)xPos == xNow;
-                    boolean isLight = xPos >= xFirstLight && xPos <= xLastLight;
-                    paint.setColor(isLight ? Color.LTGRAY : Color.DKGRAY);
-                    paint.setStyle(Paint.Style.STROKE);
-                    paint.setStrokeWidth(2f);
-                    paint.setPathEffect(null);
-                    canvas.drawPoint(xPos, yPos, paint);
-
-                    //if first light or last light draw marker
-                    if(xPos == xFirstLight || xPos == xLastLight){
-                        paint.setColor(Color.GRAY);
-                        paint.setStrokeWidth(2f);
-                        paint.setStyle(Paint.Style.FILL);
-                        paint.setPathEffect(null);
-                        Calendar date2use = xPos == xFirstLight ? firstLight : lastLight;
-                        canvas.drawLine(xPos, graphRect.top, xPos, graphRect.bottom, paint);
-                        String label = Utils.formatDate(date2use, TIME_FORMAT);
-                        Rect textRect = new Rect();
-                        paint.getTextBounds(label, 0, label.length(), textRect);
-                        canvas.drawText(label, xPos - textRect.width()/2 , graphRect.top - defaultMargin , paint);
-                    }
-
-                    //draw the tide extreme position indicator
-                    if(isLight && (x == 0 || (x == xMax - 1 && i == segments.size() - 1))){
-                        boolean isLast = x == xMax - 1 && i == segments.size() - 1;
-
-                        //line
-                        paint.setStrokeWidth(1f);
-                        paint.setColor(Color.LTGRAY);
-                        paint.setPathEffect(new DashPathEffect(new float[]{4, 4}, 0));
-                        float xOffset = isLast ? -80 : 80;
-                        canvas.drawLine(xPos, yPos, xPos + xOffset, yPos, paint);
-                        if(i != 0 || x > 0)canvas.drawLine(xPos, yPos, xPos, graphRect.bottom, paint);
-
-                        //label
-                        paint.setStrokeWidth(2f);
-                        paint.setStyle(Paint.Style.FILL);
-                        paint.setPathEffect(null);
-                        String label = isLast ? segment.label2 : segment.label1;
-                        Rect textRect = new Rect();
-                        paint.getTextBounds(label, 0, label.length(), textRect);
-                        float textXOffset = isLast ? -textRect.width() : 0;
-                        float textYOffset = (x == 0 ? segment.y1 : segment.y2) < 0 ? textRect.height() : 0;
-                        canvas.drawText(label, xPos + xOffset + textXOffset, yPos + textYOffset, paint);
-                    }
-
-                    //if 'now' then draw marker
-                    if(isNow){
-                        paint.setColor(Color.LTGRAY);
-                        paint.setStyle(Paint.Style.FILL);
-                        paint.setStrokeWidth(2f);
-                        canvas.drawLine(xPos, yPos, xPos, graphRect.bottom, paint);
-
-                        String label = Utils.convert(y + segment.normalisedBy, Utils.Conversions.METERS_2_FEET, 0)+ "ft @ " + Utils.formatDate(now, TIME_FORMAT);
-                        Rect textRect = new Rect();
-                        paint.getTextBounds(label, 0, label.length(), textRect);
-                        canvas.drawText(label, xPos + -textRect.width()/2, yPos - 8, paint);
-                    }
+            for(int i = 0; i < graphRect.width(); i++){
+                long xInMillis = firstHour.getTimeInMillis() + (long)((double)i/xScaleMillis2Points);
+                if(segment == null || segment.x2 < xInMillis){
+                    segment = getSegment(xInMillis);
                 }
-                startX += xMax;
-            } //end looping segments
+                if(segment == null)continue;
+
+                int yPos;
+                try {
+                    double y = segment.getY(xInMillis) + segment.normalisedBy;
+                    yPos =  (int)(graphRect.bottom - (yScale2Points * y));
+                } catch (Exception e){
+                    Log.e("GRAPHVIEW", e.getMessage());
+                    continue;
+                }
+
+                int xPos = i + graphRect.left;
+                boolean isLight = i >= xFirstLight && i <= xLastLight;
+                paint.setColor(isLight ? Color.LTGRAY : Color.DKGRAY);
+                paint.setStyle(Paint.Style.STROKE);
+                paint.setStrokeWidth(2f);
+                paint.setPathEffect(null);
+                canvas.drawPoint(xPos, yPos, paint);
+            }
 
             //x and y axis
             paint.setColor(Color.LTGRAY);
@@ -290,8 +282,94 @@ public class SurfConditionsOverviewFragment extends Fragment implements OnClickL
             paint.setStrokeWidth(1f);
             canvas.drawLine((float)graphRect.left, (float)graphRect.bottom, (float)graphRect.right, (float)graphRect.bottom, paint);
             canvas.drawLine((float)graphRect.left, (float)graphRect.top, (float)graphRect.left, (float)graphRect.bottom, paint);
+            canvas.drawLine((float)graphRect.right, (float)graphRect.top, (float)graphRect.right, (float)graphRect.bottom, paint);
 
-        }
+            //draw hour intervals
+            int hourIntervals = 8;
+            for(int i = 0; i <= hourIntervals; i++){
+                float x = (float)graphRect.left + i*(graphRect.width()/hourIntervals);
+
+                //tick
+                paint.setColor(Color.LTGRAY);
+                paint.setStyle(Paint.Style.STROKE);
+                paint.setStrokeWidth(1f);
+                float y = (float)graphRect.bottom + 8;
+                canvas.drawLine(x, (float)graphRect.bottom, x, y, paint);
+
+                if(i > 0 && i < hourIntervals) {
+                    //dash
+                    paint.setStyle(Paint.Style.STROKE);
+                    paint.setStrokeWidth(1f);
+                    paint.setColor(Color.LTGRAY);
+                    paint.setPathEffect(new DashPathEffect(new float[]{4, 4}, 0));
+                    canvas.drawLine(x, (float)graphRect.bottom, x, (float)graphRect.top, paint);
+
+                    //label
+                    y += 12;
+                    paint.setStyle(Paint.Style.FILL);
+                    paint.setStrokeWidth(1f);
+                    String label = "" + i * 24 / hourIntervals;
+                    canvas.drawText(label, x + 2, y, paint);
+                }
+            }
+
+            //tide extremes
+            for(int i = 0; i < segments.size(); i++){
+                boolean isLast = i == segments.size() - 1;
+
+                segment = segments.get(i);
+
+                //line
+                paint.setPathEffect(null);
+                paint.setColor(Color.LTGRAY);
+                paint.setStyle(Paint.Style.STROKE);
+                paint.setStrokeWidth(1f);
+
+                float x = (float)((double)(segment.x1 - firstHour.getTimeInMillis()) * xScaleMillis2Points);
+                x = x + graphRect.left;
+                float y = (float)((segment.y1  + segment.normalisedBy)* yScale2Points);
+                y = graphRect.bottom - y;
+                float stopY = y + segment.phaseShift*defaultMargin;
+                canvas.drawLine(x, y, x, stopY, paint);
+
+                //label
+                paint.setStyle(Paint.Style.FILL);
+                paint.setStrokeWidth(1f);
+                String label = segment.label1;
+                Rect textRect = new Rect();
+                paint.getTextBounds(label, 0, label.length(), textRect);
+                stopY = stopY + (segment.phaseShift == 1 ? textRect.height() : 0);
+                canvas.drawText(label, x - textRect.width()/2, stopY, paint);
+            }
+
+            //finally draw 'now' if relevant
+            if(nowInMillis >= firstHour.getTimeInMillis() && nowInMillis < lastHour.getTimeInMillis()){
+                float x = (float)((double)(nowInMillis - firstHour.getTimeInMillis()) * xScaleMillis2Points);
+
+                //draw line
+                paint.setColor(Color.LTGRAY);
+                paint.setStyle(Paint.Style.STROKE);
+                paint.setStrokeWidth(2f);
+                paint.setPathEffect(null);
+                canvas.drawLine(x, graphRect.bottom, x, graphRect.top, paint);
+
+                //draw label
+                paint.setStyle(Paint.Style.FILL);
+                paint.setStrokeWidth(1f);
+                String label = "Now: " + Utils.formatDate(forecast.now(),  TIME_FORMAT);
+
+                Rect textRect = new Rect();
+                paint.getTextBounds(label, 0, label.length(), textRect);
+                canvas.drawText(label, x - textRect.width()/2, graphRect.top - 4, paint);
+            }
+
+
+            //draw title
+            paint.setStyle(Paint.Style.FILL);
+            paint.setStrokeWidth(1f);
+            canvas.drawText(title, graphRect.left - 4, graphRect.top - 4, paint);
+
+        }//end onDraw
 
     } //end GraphView
 
@@ -318,46 +396,50 @@ public class SurfConditionsOverviewFragment extends Fragment implements OnClickL
         String tideData = "";
 
         graphViews.clear();
+        expanded = false;
+
         for(int i = 0; i < forecastDays.size(); i++){
             ForecastDay fd = forecastDays.get(i);
             firstAndLastLight += "First light @ " + Utils.formatDate(fd.getFirstLight(), TIME_FORMAT);
             firstAndLastLight += " | Last light @ " + Utils.formatDate(fd.getLastLight(), TIME_FORMAT);
             firstAndLastLight += " ";
+
             List<ForecastDetail.TideData> tData = fd.getTideData();
+            for(int j = 0; j < tData.size(); j++) {
+                ForecastDetail.TideData td = tData.get(j);
+                tideData += td.position + " of " + Utils.convert(td.height, Utils.Conversions.METERS_2_FEET, 0) + "ft @ " + Utils.formatDate(td.time, TIME_FORMAT);
+                tideData += " | ";
+            }
+
+
+            Calendar cal = ((Calendar)fd.date.clone());
+            cal.add(Calendar.DATE, -1);
+            ForecastDay pfd = forecast.getDay(cal);
+            if(pfd != null){
+                tData.add(0, pfd.getTideData().get(pfd.getTideData().size() - 1));
+            } else {
+                //TODO:
+            }
+
+            cal.add(Calendar.DATE, 2);
+            ForecastDay nfd = forecast.getDay(cal);
+            if(nfd != null){
+                tData.add(nfd.getTideData().get(0));
+            } else {
+                //TODO:
+            }
 
             GraphView graphView = new GraphView(getActivity(), i, forecastDays.size(), forecast, fd.getFirstLight(), fd.getLastLight());
-
-            ViewGroup g = (ViewGroup)rootView;
-            g.addView(graphView);
-            expanded = false;
             graphView.setVisibility(View.GONE);
-            graphViews.add(graphView);
 
             //build up detail for this day and add graph segments
-            for(int j = 0; j < tData.size(); j++){
-                ForecastDetail.TideData td = tData.get(j);
-                tideData += td.position + " of " + Utils.convert(td.height, Utils.Conversions.METERS_2_FEET, 0) + "ft @ " + Utils.formatDate(td.time, TIME_FORMAT);;
-                tideData += " | ";
-
-                //Sometimes the first light is prior to the first tide position (which will therefore be on the previous day)
-                if(j == 0 && td.time.getTimeInMillis() > fd.getFirstLight().getTimeInMillis()){
-                    Calendar calPrev = forecast.now();
-                    calPrev.setTimeInMillis(fd.date.getTimeInMillis() - 24*3600*1000);
-                    ForecastDay pd = forecast.getDay(calPrev);
-                    if(pd != null) {
-                        List<ForecastDetail.TideData> ptd = pd.getTideData();
-                        if(ptd.size() >= 1){
-                            graphView.addSegment(ptd.get(ptd.size() - 1), tData.get(0));
-                        }
-                    }
-                }
-
-                //add a segment
-                if(j > 0) {
-                    graphView.addSegment(tData.get(j - 1), td);
-                }
+            for(int j = 1; j < tData.size(); j++) {
+                graphView.addSegment(tData.get(j - 1), tData.get(j));
             }
+            graphViews.add(graphView);
+            ((ViewGroup)rootView).addView(graphView);
         }
+
         String overviewText = tideData + " .... " + firstAndLastLight;
         View view = getView();
         TextView otv = view.findViewById(R.id.overviewText);

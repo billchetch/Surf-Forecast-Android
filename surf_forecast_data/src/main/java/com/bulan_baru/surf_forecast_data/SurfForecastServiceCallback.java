@@ -16,6 +16,10 @@ public class SurfForecastServiceCallback<T> implements Callback<T> {
         this.liveDataError = liveDataError;
     }
 
+    public Throwable getLastError(){
+        return liveDataError.getValue();
+    }
+
     @Override
     public void onResponse(Call<T> call, Response<T> response) {
         if(response.isSuccessful()){
