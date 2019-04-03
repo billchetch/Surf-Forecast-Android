@@ -117,8 +117,8 @@ public class SurfConditionsFragmentAdapter extends FragmentPagerAdapter {
         Calendar cal = dates.get(position);
         String pageTitle = Utils.formatDate(cal, "EEE, d MMM");
         if(position == 0) {
-            pageTitle = Utils.isToday(cal) ? "Today" : "Tomorrow";
-        } else if(position == 1 && Utils.isToday(dates.get(0))){
+            pageTitle = Utils.isToday(cal, forecast.now()) ? "Today" : "Tomorrow";
+        } else if(position == 1 && Utils.isToday(dates.get(0), forecast.now())){
             pageTitle = "Tomorrow";
         }
         return pageTitle;

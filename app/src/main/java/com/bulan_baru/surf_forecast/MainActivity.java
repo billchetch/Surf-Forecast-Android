@@ -17,6 +17,7 @@ import com.bulan_baru.surf_forecast_data.ClientDevice;
 import com.bulan_baru.surf_forecast_data.Forecast;
 import com.bulan_baru.surf_forecast_data.Location;
 import com.bulan_baru.surf_forecast_data.SurfForecastRepository;
+import com.bulan_baru.surf_forecast_data.utils.Spinner2;
 import com.bulan_baru.surf_forecast_data.utils.TypeConverter;
 import com.bulan_baru.surf_forecast_data.utils.Utils;
 
@@ -25,7 +26,7 @@ import java.util.List;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
-public class MainActivity extends GenericActivity {
+public class MainActivity extends GenericActivity{
     private static final String LOG_TAG = "Main";
 
     private int currentLocationID;
@@ -114,29 +115,31 @@ public class MainActivity extends GenericActivity {
                 };
                 List<String> spinnerList = tc.convertList(locations);
 
-                Spinner locationsView = findViewById(R.id.surfLocation);
-                ArrayAdapter<String> adapter = new ArrayAdapter<>(this, R.layout.spinner_item, spinnerList);
-                locationsView.setAdapter(adapter);
+                Spinner2 locationsSpinnner = findViewById(R.id.surfLocation);
+                if(!locationsSpinnner.isOpen()) {
 
-                locationsView.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-                    @Override
-                    public void onItemSelected(AdapterView<?> parentView, View selectedItemView, int position, long id) {
-                        if(currentForecast != null && position < locations.size() && currentForecast.getLocationID() != locations.get(position).getID()) {
-                            pauseLocationUpdates = Calendar.getInstance();
-                            getForecastForLocation(locations.get(position).getID());
+                    ArrayAdapter<String> adapter = new ArrayAdapter<>(this, R.layout.spinner_item, spinnerList);
+                    locationsSpinnner.setAdapter(adapter);
+
+                    locationsSpinnner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                        @Override
+                        public void onItemSelected(AdapterView<?> parentView, View selectedItemView, int position, long id) {
+                            if (currentForecast != null && position < locations.size() && currentForecast.getLocationID() != locations.get(position).getID()) {
+                                pauseLocationUpdates = Calendar.getInstance();
+                                getForecastForLocation(locations.get(position).getID());
+                            }
+
                         }
 
-                    }
+                        @Override
+                        public void onNothingSelected(AdapterView<?> parentView) {
+                            // your code here
+                        }
+                    });
 
-                    @Override
-                    public void onNothingSelected(AdapterView<?> parentView) {
-                        // your code here
-                    }
-
-                });
-
-                pauseLocationUpdates = null;
-                getForecastForLocation(locations.get(0).getID());
+                    pauseLocationUpdates = null;
+                    getForecastForLocation(locations.get(0).getID());
+                }
             }
         });
     }
