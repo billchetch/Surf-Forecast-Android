@@ -29,6 +29,15 @@
         </activity>
         <activity android:name=".SettingsActivity"></activity>
 
+        <activity
+            android:name=".UCEActivity">
+            <intent-filter>
+                <action android:name="com.bulan_baru.broadcast.UNCAUGHT_EXCEPTION" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
         <service
             android:name=".SFLocationService"
             android:exported="true">

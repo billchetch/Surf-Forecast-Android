@@ -1,6 +1,7 @@
 package com.bulan_baru.surf_forecast;
 
 import android.Manifest;
+import android.arch.lifecycle.ViewModelProviders;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -8,6 +9,7 @@ import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Handler;
+import java.lang.Thread.UncaughtExceptionHandler;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.DialogFragment;
 import android.support.v7.app.AppCompatActivity;
@@ -23,7 +25,7 @@ import com.bulan_baru.surf_forecast_data.SurfForecastRepository;
 import com.bulan_baru.surf_forecast_data.SurfForecastRepositoryException;
 import com.bulan_baru.surf_forecast_data.utils.Utils;
 
-public class GenericActivity extends AppCompatActivity {
+public class GenericActivity extends AppCompatActivity{
     static protected final int REQUEST_ACCESS_FINE_LOACTION = 1;
 
     protected GenericViewModel viewModel = null;
@@ -39,6 +41,7 @@ public class GenericActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         initViewModel(savedInstanceState);
 
         //do basic checks
@@ -51,7 +54,7 @@ public class GenericActivity extends AppCompatActivity {
                 throw new Error("No API base URL set");
             }
         } catch (Throwable t){
-            showError(0, t.getMessage());
+            handleGeneralError(t);
         }
 
         if(includeLocation) {
@@ -129,13 +132,13 @@ public class GenericActivity extends AppCompatActivity {
 
     protected void initViewModel(Bundle savedInstanceState){
         if(viewModel == null){
-            //TODO: throw an exception
-        } else {
-            viewModel.init(((SurfForecastApplication) getApplication()).repositoryComponent.getRepository());
-            viewModel.repositoryError().observe(this, t->{
-                handleRepositoryError(t);
-            });
+            viewModel = ViewModelProviders.of(this).get(GenericViewModel.class);
         }
+
+        viewModel.init(((SurfForecastApplication) getApplication()).repositoryComponent.getRepository());
+        viewModel.repositoryError().observe(this, t->{
+            handleRepositoryError(t);
+        });
     }
 
     protected void handleRepositoryError(SurfForecastRepositoryException t){

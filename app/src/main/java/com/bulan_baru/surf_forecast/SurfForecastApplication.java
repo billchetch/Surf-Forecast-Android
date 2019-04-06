@@ -18,6 +18,7 @@ import android.view.WindowManager;
 
 import com.bulan_baru.surf_forecast_data.injection.DaggerRepositoryComponent;
 import com.bulan_baru.surf_forecast_data.injection.RepositoryComponent;
+import com.bulan_baru.surf_forecast_data.utils.UncaughtExceptionHandler;
 import com.bulan_baru.surf_forecast_data.utils.Utils;
 
 
@@ -31,9 +32,14 @@ public class SurfForecastApplication extends Application {
 
         repositoryComponent = DaggerRepositoryComponent.builder().build();
 
+        //set client device info
         String androidID = Settings.Secure.getString(this.getContentResolver(), Settings.Secure.ANDROID_ID);
         repositoryComponent.getRepository().getClientDevice().setDeviceID(androidID);
 
+        //set default uce handler
+        Thread.setDefaultUncaughtExceptionHandler(new UCEHandler(this, repositoryComponent.getRepository().getClientDevice()));
+
+        //set network
         setDeviceNetwork();
 
         //set default prefs and API Base URL
@@ -49,7 +55,7 @@ public class SurfForecastApplication extends Application {
         //add a network change listener to handle network state changes
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(WifiManager.NETWORK_STATE_CHANGED_ACTION);
-        getApplicationContext().registerReceiver(new BroadcastReceiver() {
+        registerReceiver(new BroadcastReceiver() {
                 @Override
                 public void onReceive(Context context, Intent intent) {
                     setDeviceNetwork();

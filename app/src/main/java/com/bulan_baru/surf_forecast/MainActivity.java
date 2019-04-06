@@ -1,6 +1,7 @@
 package com.bulan_baru.surf_forecast;
 
 import android.arch.lifecycle.ViewModelProviders;
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.design.widget.TabLayout;
 import android.support.v4.view.ViewPager;
@@ -215,6 +216,8 @@ public class MainActivity extends GenericActivity{
         if(!expired) {
             ViewPager viewPager = findViewById(R.id.viewPager);
             int cp = viewPager.getCurrentItem();
+
+
             surfConditionsAdapter.setForecast(forecast);
             if (currentForecast == null) { //first time this is ever called
                 //get the view pager for the surf conditions

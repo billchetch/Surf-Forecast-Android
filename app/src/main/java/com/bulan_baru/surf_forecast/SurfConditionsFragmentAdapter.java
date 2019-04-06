@@ -47,6 +47,9 @@ public class SurfConditionsFragmentAdapter extends FragmentPagerAdapter {
         //use forecast period to set the 'days' the view can see
         //start by getting some important dates
         Calendar startDate = forecast.now(); //get 'now' with forecast timezone applied
+        if(forecast.now().getTimeInMillis() < forecast.getForecastFrom().getTimeInMillis()){
+            startDate = forecast.getForecastFrom();
+        }
         Calendar firstLight = forecast.getFirstLight(startDate);
         Calendar lastLight = forecast.getLastLight(startDate);
         Calendar tomorrow = (Calendar)startDate.clone();

@@ -96,6 +96,26 @@ public class SurfForecastRepository{
     public void setUseDeviceLocation(boolean useDeviceLocation){ this.useDeviceLocation = useDeviceLocation; }
     public void setMaxDistance(float maxDistance){ this.maxDistance = maxDistance; }
 
+
+    public LiveData<Digest> postDigest(Digest d){
+        final MutableLiveData<Digest> digest = new MutableLiveData<>();
+
+        SurfForecastService service = getService();
+        if(service != null) {
+            service.postDigest(d).enqueue(
+                    new SurfForecastServiceCallback<Digest>(liveDataServiceError) {
+                        @Override
+                        public void handleResponse(Call<Digest> call, Response<Digest> response) {
+                            d.id = response.body().id;
+                            digest.setValue(d);
+                        }
+                    }
+            );
+        }
+
+        return digest;
+    }
+
     public LiveData<ClientDevice> updateDeviceLocation(android.location.Location location){
         if(device != null) {
             if(location != null) {
