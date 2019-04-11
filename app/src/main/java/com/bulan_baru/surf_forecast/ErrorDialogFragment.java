@@ -13,6 +13,7 @@ public class ErrorDialogFragment extends AppCompatDialogFragment implements OnCl
 
     private int errorType;
     private String errorMessage;
+    private Dialog dialog;
 
     ErrorDialogFragment(int errorType, String errorMessage){
         this.errorType = errorType;
@@ -48,12 +49,19 @@ public class ErrorDialogFragment extends AppCompatDialogFragment implements OnCl
         contentView.setOnClickListener(this);
 
         // Create the AlertDialog object and return it
-        return builder.create();
+        dialog = builder.create();
+
+        return dialog;
     }
 
     @Override
     public void onClick(View v){
         dismiss();
+    }
+
+
+    public boolean isShowing(){
+        return dialog != null ? dialog.isShowing() : false;
     }
 
 }

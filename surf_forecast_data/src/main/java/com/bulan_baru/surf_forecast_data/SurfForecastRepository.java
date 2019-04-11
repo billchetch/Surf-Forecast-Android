@@ -4,8 +4,12 @@ import android.arch.lifecycle.LiveData;
 import android.arch.lifecycle.MutableLiveData;
 import android.util.Log;
 
+import com.bulan_baru.surf_forecast_data.utils.Utils;
+
+import java.net.ConnectException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
@@ -17,14 +21,17 @@ import retrofit2.Response;
 
 @Singleton
 public class SurfForecastRepository{
-    public static final int ERROR_LOCATIONS_AVAILBLE = 2;
+    public static final int ERROR_LOCATIONS_NOT_AVAILBLE = 2;
     public static final int ERROR_FORECAST_FOR_LOCATION_NOT_AVAILABLE = 3;
+    public static final int ERROR_SERVICE_UNREACHABLE = 4;
 
+    private static final long RETRY_AFTER = (long)(Utils.MINUTE_IN_MILLIS*0.5);
     private static final String LOG_TAG = "SF Repo";
 
     private SurfForecastServiceManager serviceManager;
     private ClientDevice device;
     private boolean serviceAvailable = true;
+    private Calendar serviceLastAvailable = null;
     private boolean useDeviceLocation = true;
     private float maxDistance = -1;
 
@@ -32,7 +39,6 @@ public class SurfForecastRepository{
     private final MutableLiveData<Throwable> liveDataServiceError = new MutableLiveData<>();
     private final MutableLiveData<SurfForecastRepositoryException> liveDataRepositoryError = new MutableLiveData<>();
     private final MutableLiveData<ClientDevice> liveDataDevice = new MutableLiveData<>();
-
 
 
     @Inject
@@ -49,8 +55,15 @@ public class SurfForecastRepository{
 
     protected void handleServiceError(Throwable t){
         int errorCode = 0;
-        if(t instanceof SocketTimeoutException){
+        if(t instanceof SocketTimeoutException || t instanceof ConnectException){
+            errorCode = ERROR_SERVICE_UNREACHABLE;
             serviceAvailable = false;
+
+            Log.i(LOG_TAG, "connection error: " + t.getMessage());
+
+            //wait a certain time and then reset the serviceAvailable to try again
+            serviceLastAvailable = Calendar.getInstance();
+
         }
         if(t instanceof SurfForecastServiceException){
             SurfForecastServiceException sfsx = ((SurfForecastServiceException) t);
@@ -63,7 +76,9 @@ public class SurfForecastRepository{
                     serviceAvailable = true; break;
 
                 default:
-                    serviceAvailable = false; break;
+                    serviceLastAvailable = Calendar.getInstance();
+                    serviceAvailable = false;
+                    break;
 
             }
         }
@@ -74,7 +89,12 @@ public class SurfForecastRepository{
         liveDataRepositoryError.setValue(new SurfForecastRepositoryException(t.getMessage(), errorCode));
     }
 
-    protected boolean isServiceAvailable(){ return serviceAvailable; }
+    protected boolean isServiceAvailable(){
+        if(!serviceAvailable && serviceLastAvailable != null && Calendar.getInstance().getTimeInMillis() - serviceLastAvailable.getTimeInMillis() > RETRY_AFTER){
+            serviceAvailable = true;
+        }
+        return serviceAvailable;
+    }
 
     public void flush(){
         serviceManager.cancelAllCalls();

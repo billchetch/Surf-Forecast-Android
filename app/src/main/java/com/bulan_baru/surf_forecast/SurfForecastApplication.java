@@ -66,6 +66,7 @@ public class SurfForecastApplication extends Application {
     protected void setDeviceNetwork(){
         Context context = getApplicationContext();
 
+        Log.i("SFA", "setDeviceNetwork");
         WifiManager wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
         WifiInfo wifiInfo = wifiManager.getConnectionInfo();
         if (wifiInfo != null) {

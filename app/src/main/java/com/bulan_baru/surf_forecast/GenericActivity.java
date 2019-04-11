@@ -94,6 +94,7 @@ public class GenericActivity extends AppCompatActivity{
             };
             registerReceiver(receiveLocationUpdates, intentFilter);
 
+            //after registering with location updates service we fire it up
             startLocationUpdatesService();
         }
     }
@@ -168,7 +169,6 @@ public class GenericActivity extends AppCompatActivity{
             case REQUEST_ACCESS_FINE_LOACTION:
                 // If request is cancelled, the result arrays are empty.
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    //TODO:start location updates service
                     startLocationUpdatesService();
                 } else {
                     Log.e("GACR", "permission NOT granted");
@@ -212,6 +212,8 @@ public class GenericActivity extends AppCompatActivity{
     public void showError(int errorCode, String errorMessage){
         Log.e("GAERROR", errorMessage);
         hideProgress();
+        if(errorDialog != null)errorDialog.dismiss();
+
         errorDialog = new ErrorDialogFragment(errorCode, errorMessage);
         errorDialog.show(getSupportFragmentManager(), "ErrorDialog");
     }

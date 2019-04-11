@@ -33,6 +33,7 @@ public class Utils {
     final private static int CHECK_INTERNET_PORT = 80;
 
     final public static int HOUR_IN_MILLIS = 3600*1000;
+    final public static int MINUTE_IN_MILLIS = 1000*60;
     final public static int DAY_IN_MILLIS = 24*3600*1000;
 
 

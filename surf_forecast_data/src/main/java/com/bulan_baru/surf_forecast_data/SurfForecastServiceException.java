@@ -26,7 +26,7 @@ public class SurfForecastServiceException extends Exception {
             ErrorResponse errorResponse = gson.fromJson(errorBody, ErrorResponse.class);
             sfex = new SurfForecastServiceException(errorResponse.message, errorResponse.errorCode, response.code());
         } catch (Exception e) {
-            errorBody = "No error message supplied";
+            errorBody = "SurfForecastException.create : " + e.getMessage();
             sfex = new SurfForecastServiceException(errorBody, 0, response.code());
         }
         return sfex;
