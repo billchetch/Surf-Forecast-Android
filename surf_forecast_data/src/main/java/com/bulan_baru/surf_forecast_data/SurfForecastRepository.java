@@ -114,6 +114,7 @@ public class SurfForecastRepository{
     public LiveData<SurfForecastRepositoryException> repositoryError(){ return liveDataRepositoryError; }
 
     public void setUseDeviceLocation(boolean useDeviceLocation){ this.useDeviceLocation = useDeviceLocation; }
+    public boolean isUsingDeviceLocation(){ return useDeviceLocation; }
     public void setMaxDistance(float maxDistance){ this.maxDistance = maxDistance; }
 
 
@@ -156,7 +157,7 @@ public class SurfForecastRepository{
 
         SurfForecastService service = getService();
         if(service != null) {
-            if(useDeviceLocation){
+            if(isUsingDeviceLocation()){
                 service.getLocations(device.getLatitude(), device.getLongitude(), maxDistance).enqueue(
                         new SurfForecastServiceCallback<List<Location>>(liveDataServiceError) {
                             @Override

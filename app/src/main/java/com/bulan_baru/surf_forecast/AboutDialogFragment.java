@@ -11,6 +11,15 @@ import android.widget.TextView;
 
 import com.bulan_baru.surf_forecast_data.ClientDevice;
 import com.bulan_baru.surf_forecast_data.SurfForecastRepository;
+import com.bulan_baru.surf_forecast_data.utils.Utils;
+
+import java.io.BufferedInputStream;
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 
 public class AboutDialogFragment extends AppCompatDialogFragment {
     private SurfForecastRepository repository;
@@ -42,10 +51,19 @@ public class AboutDialogFragment extends AppCompatDialogFragment {
         blurb += "Client device ID: " + device.getDeviceID() + lf;
         blurb += "Using location from device: " + device.getLocationDeviceID() + lf;
 
-
+        //get the content view
         View contentView = inflater.inflate(R.layout.about_dialog, null);
-        TextView btv = (TextView)contentView.findViewById(R.id.aboutBlurb);
+
+        //fill in the about stuff
+        TextView btv = contentView.findViewById(R.id.aboutBlurb);
         btv.setText(blurb);
+
+        //fill in log info
+        String logData = Utils.readFile(getActivity(), SurfForecastApplication.LOG_FILE);
+        if(logData != null) {
+            TextView ltv = contentView.findViewById(R.id.log);
+            ltv.setText(logData);
+        }
 
         builder.setView(contentView)
                 .setTitle(R.string.app_name);

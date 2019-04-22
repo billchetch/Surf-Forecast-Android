@@ -34,10 +34,20 @@ public class UCEActivity extends GenericActivity implements View.OnClickListener
 
         TextView tv = findViewById(R.id.uceErrorReport);
         tv.setText(report);
+
+        startTimer(10);
+    }
+
+
+    @Override
+    protected void onTimer(){
+        Button closeButton = findViewById(R.id.uceCloseButton);
+        closeButton.setEnabled(true);
     }
 
     @Override
     public void onClick(View v) {
         finish();
+        System.exit(0);
     }
 }

@@ -23,6 +23,7 @@ import com.bulan_baru.surf_forecast_data.utils.Utils;
 
 
 public class SurfForecastApplication extends Application {
+    static public final String LOG_FILE = "bbsf.log";
 
     RepositoryComponent repositoryComponent;
 
@@ -37,7 +38,7 @@ public class SurfForecastApplication extends Application {
         repositoryComponent.getRepository().getClientDevice().setDeviceID(androidID);
 
         //set default uce handler
-        Thread.setDefaultUncaughtExceptionHandler(new UCEHandler(this, repositoryComponent.getRepository().getClientDevice()));
+        Thread.setDefaultUncaughtExceptionHandler(new UCEHandler(this, LOG_FILE, repositoryComponent.getRepository().getClientDevice()));
 
         //set network
         setDeviceNetwork();
@@ -47,8 +48,10 @@ public class SurfForecastApplication extends Application {
         SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
         String apiBaseURL = sharedPref.getString(SFLocationService.API_BASE_URL, null);
         repositoryComponent.getRepository().getServiceManager().setApiBaseURL(apiBaseURL);
+
         boolean useDeviceLocation = sharedPref.getBoolean("use_device_location", true);
         repositoryComponent.getRepository().setUseDeviceLocation(useDeviceLocation);
+
         float maxDistance = sharedPref.getFloat("max_distance", -1);
         repositoryComponent.getRepository().setMaxDistance(maxDistance);
 
@@ -66,7 +69,7 @@ public class SurfForecastApplication extends Application {
     protected void setDeviceNetwork(){
         Context context = getApplicationContext();
 
-        Log.i("SFA", "setDeviceNetwork");
+        Log.i("SFA", "setDevnniceNetwork");
         WifiManager wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
         WifiInfo wifiInfo = wifiManager.getConnectionInfo();
         if (wifiInfo != null) {

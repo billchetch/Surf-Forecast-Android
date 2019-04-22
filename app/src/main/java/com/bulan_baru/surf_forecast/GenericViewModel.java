@@ -13,7 +13,7 @@ import com.bulan_baru.surf_forecast_data.SurfForecastRepositoryException;
 public class GenericViewModel extends ViewModel {
     protected SurfForecastRepository surfForecastRepository;
 
-    GenericViewModel() {
+    public GenericViewModel() {
 
     }
 
@@ -26,6 +26,8 @@ public class GenericViewModel extends ViewModel {
     }
 
     SurfForecastRepository getSurfForecastRepository(){ return surfForecastRepository; }
+
+    boolean isUsingDeviceLocation(){ return surfForecastRepository.isUsingDeviceLocation(); }
 
     LiveData<SurfForecastRepositoryException> repositoryError(){ return surfForecastRepository.repositoryError(); }
 

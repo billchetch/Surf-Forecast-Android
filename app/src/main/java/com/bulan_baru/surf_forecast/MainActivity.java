@@ -3,6 +3,7 @@ package com.bulan_baru.surf_forecast;
 import android.arch.lifecycle.ViewModelProviders;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.design.widget.TabLayout;
 import android.support.v4.view.ViewPager;
 import android.support.v7.widget.Toolbar;
@@ -20,6 +21,7 @@ import com.bulan_baru.surf_forecast_data.Location;
 import com.bulan_baru.surf_forecast_data.SurfForecastRepository;
 import com.bulan_baru.surf_forecast_data.utils.Spinner2;
 import com.bulan_baru.surf_forecast_data.utils.TypeConverter;
+import com.bulan_baru.surf_forecast_data.utils.UncaughtExceptionHandler;
 import com.bulan_baru.surf_forecast_data.utils.Utils;
 
 import java.util.Calendar;
@@ -49,6 +51,17 @@ public class MainActivity extends GenericActivity{
 
         hideSurfConditions();
         hideProgress();
+
+        if (!viewModel.isUsingDeviceLocation()) {
+            //then we need a timer
+            onDeviceLocationUpdated(null);
+            startTimer(30);
+        }
+    }
+
+    @Override
+    protected void onTimer(){
+        onDeviceLocationUpdated(null);
     }
 
     @Override
@@ -120,6 +133,7 @@ public class MainActivity extends GenericActivity{
                 if(!locationsSpinnner.isOpen()) {
 
                     ArrayAdapter<String> adapter = new ArrayAdapter<>(this, R.layout.spinner_item, spinnerList);
+                    adapter.setDropDownViewResource(R.layout.spinner_dropdown);
                     locationsSpinnner.setAdapter(adapter);
 
                     locationsSpinnner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {

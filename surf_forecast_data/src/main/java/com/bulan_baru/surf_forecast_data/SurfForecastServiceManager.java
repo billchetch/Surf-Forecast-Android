@@ -29,7 +29,9 @@ public class SurfForecastServiceManager {
 
     public void setApiBaseURL(String apiBaseURL){
         if(apiBaseURL != null) {
+            if(!apiBaseURL.endsWith("/"))apiBaseURL += "/";
             this.apiBaseURL = apiBaseURL.toLowerCase();
+
         } else {
             //TODO: throw exception
         }

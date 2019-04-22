@@ -6,7 +6,12 @@ import android.net.NetworkInfo;
 
 import com.bulan_baru.surf_forecast_data.SurfForecastService;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.text.DateFormat;
@@ -286,4 +291,34 @@ public class Utils {
     }
 
 
+    //FILE
+    public static boolean writeFile(Context context, String filename, String data){
+        try {
+            FileOutputStream outputStream = context.openFileOutput(filename, Context.MODE_PRIVATE);
+            outputStream.write(data.getBytes());
+            outputStream.close();
+            return true;
+        } catch (Exception ex){
+            return false;
+        }
+    }
+
+    public static String readFile(Context context, String filename){
+        try {
+            StringBuilder text = new StringBuilder();
+            FileInputStream fis = context.openFileInput(filename);
+            BufferedReader br = new BufferedReader(new InputStreamReader(new BufferedInputStream(fis)));
+
+            String line;
+            while ((line = br.readLine()) != null) {
+                text.append(line);
+                text.append('\n');
+            }
+            br.close();
+
+            return text.toString();
+        } catch (Exception ex){
+            return null;
+        }
+    }
 }

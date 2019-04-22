@@ -38,6 +38,35 @@ public class GenericActivity extends AppCompatActivity{
     BroadcastReceiver receivePermissionRequests;
     BroadcastReceiver receiveLocationUpdates;
 
+    //time stuff
+    private int timerDelay = 30;
+    boolean timerStarted = false;
+    Handler timerHandler = new Handler();
+    Runnable timerRunnable = new Runnable() {
+        @Override
+        public void run() {
+            onTimer();
+
+            timerHandler.postDelayed(this, timerDelay*1000);
+        }
+    };
+
+    protected void onTimer(){
+        //stub method
+    }
+
+    protected void startTimer(int timerDelay){
+        if(timerStarted)return;
+        this.timerDelay = timerDelay;
+        timerHandler.postDelayed(timerRunnable, timerDelay*1000);
+        timerStarted = true;
+    }
+
+    protected void stopTimer(){
+        timerHandler.removeCallbacks(timerRunnable);
+        timerStarted = false;
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -55,9 +84,10 @@ public class GenericActivity extends AppCompatActivity{
             }
         } catch (Throwable t){
             handleGeneralError(t);
+            return;
         }
 
-        if(includeLocation) {
+        if(includeLocation && viewModel.isUsingDeviceLocation()) {
             //permission requests
             IntentFilter intentFilter = new IntentFilter();
             intentFilter.addAction(SFLocationService.ACTION_REQUEST_PERMISSION);
@@ -123,12 +153,14 @@ public class GenericActivity extends AppCompatActivity{
     protected void onDestroy() {
         super.onDestroy();
 
-        if (includeLocation) {
+        if (includeLocation && viewModel.isUsingDeviceLocation()) {
             stopLocationUpdatesService();
 
             unregisterReceiver(receivePermissionRequests);
             unregisterReceiver(receiveLocationUpdates);
         }
+
+        if(timerStarted)stopTimer();
     }
 
     protected void initViewModel(Bundle savedInstanceState){
@@ -159,7 +191,7 @@ public class GenericActivity extends AppCompatActivity{
 
     protected void handleGeneralError(Throwable t){
         showError(0, t.getMessage());
-        Log.e("ERROR", t.getMessage());
+        Log.e("ERROR", t.getMessage() == null ? "NULL" : t.getMessage());
     }
 
 
@@ -210,6 +242,7 @@ public class GenericActivity extends AppCompatActivity{
     }
 
     public void showError(int errorCode, String errorMessage){
+        if(errorMessage == null)errorMessage = "NULL";
         Log.e("GAERROR", errorMessage);
         hideProgress();
         if(errorDialog != null)errorDialog.dismiss();
