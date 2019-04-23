@@ -175,7 +175,7 @@ public class GenericActivity extends AppCompatActivity{
     }
 
     protected void handleRepositoryError(SurfForecastRepositoryException t){
-        String message;
+        String message = null;
         switch(t.getErrorCode()){
             case SurfForecastRepository.ERROR_FORECAST_FOR_LOCATION_NOT_AVAILABLE:
                 message = "There is currently no forecast data for this location.  Please try again later";
@@ -186,12 +186,12 @@ public class GenericActivity extends AppCompatActivity{
                 break;
         }
 
-        showError(t.getErrorCode(), message);
+        showError(t.getErrorCode(), message == null ? "NULL" : message);
     }
 
     protected void handleGeneralError(Throwable t){
-        showError(0, t.getMessage());
-        Log.e("ERROR", t.getMessage() == null ? "NULL" : t.getMessage());
+        String message = t.getMessage();
+        showError(0, message == null ? "NULL" : message);
     }
 
 
@@ -242,7 +242,6 @@ public class GenericActivity extends AppCompatActivity{
     }
 
     public void showError(int errorCode, String errorMessage){
-        if(errorMessage == null)errorMessage = "NULL";
         Log.e("GAERROR", errorMessage);
         hideProgress();
         if(errorDialog != null)errorDialog.dismiss();

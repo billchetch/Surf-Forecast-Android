@@ -348,13 +348,14 @@ public class SurfConditionsOverviewFragment extends Fragment implements OnClickL
                 float x = (float)((double)(nowInMillis - firstHour.getTimeInMillis()) * xScaleMillis2Points);
 
                 //draw line
-                paint.setColor(Color.LTGRAY);
+                paint.setColor(Color.CYAN);
                 paint.setStyle(Paint.Style.STROKE);
-                paint.setStrokeWidth(2f);
+                paint.setStrokeWidth(3f);
                 paint.setPathEffect(null);
                 canvas.drawLine(x, graphRect.bottom, x, graphRect.top, paint);
 
                 //draw label
+                paint.setColor(Color.LTGRAY);
                 paint.setStyle(Paint.Style.FILL);
                 paint.setStrokeWidth(1f);
                 String label = "Now: " + Utils.formatDate(forecast.now(),  TIME_FORMAT);

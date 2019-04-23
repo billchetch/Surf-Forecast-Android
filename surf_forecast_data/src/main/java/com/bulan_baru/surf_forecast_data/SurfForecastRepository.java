@@ -9,6 +9,7 @@ import com.bulan_baru.surf_forecast_data.utils.Utils;
 import java.net.ConnectException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
@@ -55,14 +56,15 @@ public class SurfForecastRepository{
 
     protected void handleServiceError(Throwable t){
         int errorCode = 0;
-        if(t instanceof SocketTimeoutException || t instanceof ConnectException){
+        String message = t.getMessage();
+
+        if(t instanceof SocketTimeoutException || t instanceof ConnectException || t instanceof UnknownHostException){
             errorCode = ERROR_SERVICE_UNREACHABLE;
             serviceAvailable = false;
 
-            Log.i(LOG_TAG, "connection error: " + t.getMessage());
-
             //wait a certain time and then reset the serviceAvailable to try again
             serviceLastAvailable = Calendar.getInstance();
+            message = "Service unreachable due to " + t.getClass().getName();
 
         }
         if(t instanceof SurfForecastServiceException){
@@ -83,10 +85,14 @@ public class SurfForecastRepository{
             }
         }
 
-        Log.e(LOG_TAG, t.getMessage() != null ? t.getMessage() : "no error message available");
+        if(message == null){
+            message = "No message supplied.\n";
+            message += " Class: " + t.getClass().getName() + "\n";
+            message += Utils.stackTrace2String(t);
+        }
 
         //now we set the geenral repository error using service error exception data
-        liveDataRepositoryError.setValue(new SurfForecastRepositoryException(t.getMessage(), errorCode));
+        liveDataRepositoryError.setValue(new SurfForecastRepositoryException(message, errorCode));
     }
 
     protected boolean isServiceAvailable(){

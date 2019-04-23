@@ -59,15 +59,7 @@ public class UncaughtExceptionHandler implements Thread.UncaughtExceptionHandler
     }
 
     public String getErrorReport(Thread thread, Throwable exception){
-
-        StringWriter stackTrace = new StringWriter();
-        exception.printStackTrace(new PrintWriter(stackTrace));
-
-        StringBuilder errorReport = new StringBuilder();
-        errorReport.append(stackTrace.toString());
-
-        return errorReport.toString();
-
+        return Utils.stackTrace2String(exception);
     }
 
 }

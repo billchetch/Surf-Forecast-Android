@@ -19,6 +19,7 @@ import com.bulan_baru.surf_forecast_data.ClientDevice;
 import com.bulan_baru.surf_forecast_data.Forecast;
 import com.bulan_baru.surf_forecast_data.Location;
 import com.bulan_baru.surf_forecast_data.SurfForecastRepository;
+import com.bulan_baru.surf_forecast_data.SurfForecastService;
 import com.bulan_baru.surf_forecast_data.utils.Spinner2;
 import com.bulan_baru.surf_forecast_data.utils.TypeConverter;
 import com.bulan_baru.surf_forecast_data.utils.UncaughtExceptionHandler;
@@ -85,6 +86,18 @@ public class MainActivity extends GenericActivity{
         if(errorCode == SurfForecastRepository.ERROR_FORECAST_FOR_LOCATION_NOT_AVAILABLE){
             noForecastForLocationError = true;
         }
+
+
+        //suppress service unreachable errors if they occur when just refreshing data and are less than an hour old
+        if(errorCode == SurfForecastRepository.ERROR_SERVICE_UNREACHABLE){
+            boolean isSameLocation = (currentForecast != null && currentForecast.getLocationID() == currentLocationID);
+            if(isSameLocation && forecastLastDisplayed != null && Utils.dateDiff(Calendar.getInstance(), forecastLastDisplayed, TimeUnit.MINUTES) < 60){
+                return;
+            } else if(isSameLocation && forecastLastDisplayed != null){
+                errorMessage += "Forecast last displayed " + Utils.formatDate(forecastLastDisplayed, SurfForecastService.DATE_FORMAT);
+            }
+        }
+
         super.showError(errorCode, errorMessage);
     }
 
@@ -162,7 +175,6 @@ public class MainActivity extends GenericActivity{
     protected void getForecastForLocation(int locationID){
         //if the current forecast is for the same location then don't immediately go and get a new forecast
         //instead wait X minutes before doing so
-        //TODO: make X a setting
         if(currentForecast != null && currentForecast.getLocationID() == locationID && Utils.dateDiff(Calendar.getInstance(), forecastLastDisplayed, TimeUnit.MINUTES) < 20){
             return;
         }
@@ -178,7 +190,6 @@ public class MainActivity extends GenericActivity{
         showProgress();
         ((MainViewModel)viewModel).getForecast(currentLocationID).observe(this, forecast -> {
 
-            //save forecast for use elsewhere and update forecast freshness
             setCurrentForecast(forecast);
 
         });
@@ -186,15 +197,18 @@ public class MainActivity extends GenericActivity{
 
     protected void setCurrentForecast(Forecast forecast){
         //check if the request to set the current forecast doesn't require changing the data displayed
-        boolean newForecast = (currentForecast == null || currentForecast.getFeedRunID() != forecast.getFeedRunID() || currentForecast.getLocationID() != forecast.getLocationID());
+        //this differs from the wait in getForecastForLocation because it tests whether the feed run is the same
+        //if it is the same then the data will be the same and there's no need for updating display
+        boolean forecastHasChanged = (currentForecast == null || currentForecast.getFeedRunID() != forecast.getFeedRunID() || currentForecast.getLocationID() != forecast.getLocationID());
         Calendar now = Calendar.getInstance();
-        if(!newForecast && Utils.dateDiff(now, forecastLastDisplayed, TimeUnit.MINUTES) < 20){
+        if(!forecastHasChanged && Utils.dateDiff(now, forecastLastDisplayed, TimeUnit.MINUTES) < 25){
             showSurfConditions();
             hideProgress();
             return;
         }
 
-        //if here the forecast being set is different from the one that is already set ... or it's the first forecast being set.
+        //if here the forecast being set is different from the one that is already set ... or it's the first forecast being set
+        //... or a certain time has elapsed
         String s = "Updated ";
         TimeZone tz = TimeZone.getTimeZone("UTC");
         Calendar cal = Calendar.getInstance(tz);
