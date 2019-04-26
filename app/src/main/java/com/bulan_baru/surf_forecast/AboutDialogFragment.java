@@ -7,10 +7,12 @@ import android.support.v7.app.AppCompatDialogFragment;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
 
 import com.bulan_baru.surf_forecast_data.ClientDevice;
 import com.bulan_baru.surf_forecast_data.SurfForecastRepository;
+import com.bulan_baru.surf_forecast_data.utils.Logger;
 import com.bulan_baru.surf_forecast_data.utils.Utils;
 
 import java.io.BufferedInputStream;
@@ -59,7 +61,7 @@ public class AboutDialogFragment extends AppCompatDialogFragment {
         btv.setText(blurb);
 
         //fill in log info
-        String logData = Utils.readFile(getActivity(), SurfForecastApplication.LOG_FILE);
+        String logData = Logger.read();
         if(logData != null) {
             TextView ltv = contentView.findViewById(R.id.log);
             ltv.setText(logData);
@@ -67,6 +69,15 @@ public class AboutDialogFragment extends AppCompatDialogFragment {
 
         builder.setView(contentView)
                 .setTitle(R.string.app_name);
+
+        //set the close button
+        Button closeButton = contentView.findViewById(R.id.closeButton);
+        closeButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                dismiss();
+            }
+        });
 
         // Create the AlertDialog object and return it
         return builder.create();

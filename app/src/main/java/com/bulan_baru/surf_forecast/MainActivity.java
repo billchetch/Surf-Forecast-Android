@@ -130,7 +130,6 @@ public class MainActivity extends GenericActivity{
             return;
         }
 
-
         ((MainViewModel)viewModel).getLocationsNearby().observe(this, locations -> {
             if(locations.size() > 0) {
                 TypeConverter<Location,String> tc = new TypeConverter<Location,String>(){
@@ -156,7 +155,6 @@ public class MainActivity extends GenericActivity{
                                 pauseLocationUpdates = Calendar.getInstance();
                                 getForecastForLocation(locations.get(position).getID());
                             }
-
                         }
 
                         @Override
@@ -165,6 +163,7 @@ public class MainActivity extends GenericActivity{
                         }
                     });
 
+                    //
                     pauseLocationUpdates = null;
                     getForecastForLocation(locations.get(0).getID());
                 }

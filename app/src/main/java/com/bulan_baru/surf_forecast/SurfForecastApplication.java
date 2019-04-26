@@ -1,6 +1,8 @@
 package com.bulan_baru.surf_forecast;
 
+import android.app.AlarmManager;
 import android.app.Application;
+import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -18,6 +20,7 @@ import android.view.WindowManager;
 
 import com.bulan_baru.surf_forecast_data.injection.DaggerRepositoryComponent;
 import com.bulan_baru.surf_forecast_data.injection.RepositoryComponent;
+import com.bulan_baru.surf_forecast_data.utils.Logger;
 import com.bulan_baru.surf_forecast_data.utils.UncaughtExceptionHandler;
 import com.bulan_baru.surf_forecast_data.utils.Utils;
 
@@ -31,6 +34,12 @@ public class SurfForecastApplication extends Application {
     public void onCreate() {
         super.onCreate();
 
+        //initialise logger
+        Logger.init(this, LOG_FILE);
+        Logger.info("Application started");
+        Logger.info("Write some log data");
+
+        //build repository
         repositoryComponent = DaggerRepositoryComponent.builder().build();
 
         //set client device info
@@ -64,6 +73,21 @@ public class SurfForecastApplication extends Application {
                     setDeviceNetwork();
                 }
             }, intentFilter);
+    }
+
+    public void restartApp(int delayInSecs){
+        Intent intent = getPackageManager().getLaunchIntentForPackage( getPackageName() );
+
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        startActivity(intent);
+
+        PendingIntent pendingIntent = PendingIntent.getActivity(getBaseContext(), 0, intent, intent.getFlags());
+
+        AlarmManager mgr = (AlarmManager) getBaseContext().getSystemService(Context.ALARM_SERVICE);
+        mgr.set(AlarmManager.RTC, System.currentTimeMillis() + 1000*delayInSecs, pendingIntent);
+
+        System.exit(0);
     }
 
     protected void setDeviceNetwork(){

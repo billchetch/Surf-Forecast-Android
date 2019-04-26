@@ -1,6 +1,8 @@
 package com.bulan_baru.surf_forecast;
 
 import android.Manifest;
+import android.app.AlarmManager;
+import android.app.PendingIntent;
 import android.arch.lifecycle.ViewModelProviders;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -193,7 +195,6 @@ public class GenericActivity extends AppCompatActivity{
         String message = t.getMessage();
         showError(0, message == null ? "NULL" : message);
     }
-
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults){

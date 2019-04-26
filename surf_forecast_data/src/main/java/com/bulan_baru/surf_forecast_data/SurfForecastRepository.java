@@ -26,7 +26,7 @@ public class SurfForecastRepository{
     public static final int ERROR_FORECAST_FOR_LOCATION_NOT_AVAILABLE = 3;
     public static final int ERROR_SERVICE_UNREACHABLE = 4;
 
-    private static final long RETRY_AFTER = (long)(Utils.MINUTE_IN_MILLIS*0.5);
+    private static final long RETRY_AFTER = (long)(Utils.MINUTE_IN_MILLIS*2);
     private static final String LOG_TAG = "SF Repo";
 
     private SurfForecastServiceManager serviceManager;
