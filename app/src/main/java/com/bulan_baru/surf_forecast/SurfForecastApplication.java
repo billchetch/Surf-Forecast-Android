@@ -36,8 +36,8 @@ public class SurfForecastApplication extends Application {
 
         //initialise logger
         Logger.init(this, LOG_FILE);
+        //Logger.clear();
         Logger.info("Application started");
-        Logger.info("Write some log data");
 
         //build repository
         repositoryComponent = DaggerRepositoryComponent.builder().build();

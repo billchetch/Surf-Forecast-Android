@@ -62,13 +62,23 @@ public class AboutDialogFragment extends AppCompatDialogFragment {
 
         //fill in log info
         String logData = Logger.read();
+        TextView ltv = contentView.findViewById(R.id.log);
         if(logData != null) {
-            TextView ltv = contentView.findViewById(R.id.log);
             ltv.setText(logData);
         }
 
         builder.setView(contentView)
                 .setTitle(R.string.app_name);
+
+        //set clear log button
+        Button clearLogButton = contentView.findViewById(R.id.clearLogButton);
+        clearLogButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Logger.clear();
+                ltv.setText(Logger.read());
+            }
+        });
 
         //set the close button
         Button closeButton = contentView.findViewById(R.id.closeButton);

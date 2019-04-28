@@ -20,6 +20,7 @@ import com.bulan_baru.surf_forecast_data.Forecast;
 import com.bulan_baru.surf_forecast_data.Location;
 import com.bulan_baru.surf_forecast_data.SurfForecastRepository;
 import com.bulan_baru.surf_forecast_data.SurfForecastService;
+import com.bulan_baru.surf_forecast_data.utils.Logger;
 import com.bulan_baru.surf_forecast_data.utils.Spinner2;
 import com.bulan_baru.surf_forecast_data.utils.TypeConverter;
 import com.bulan_baru.surf_forecast_data.utils.UncaughtExceptionHandler;
@@ -37,6 +38,7 @@ public class MainActivity extends GenericActivity{
     private Forecast currentForecast;
     private SurfConditionsFragmentAdapter surfConditionsAdapter;
     private Calendar forecastLastDisplayed;
+    private int currentConditionsPage = -1;
     private Calendar pauseLocationUpdates;
     private boolean noForecastForLocationError = false;
 
@@ -92,6 +94,7 @@ public class MainActivity extends GenericActivity{
         if(errorCode == SurfForecastRepository.ERROR_SERVICE_UNREACHABLE){
             boolean isSameLocation = (currentForecast != null && currentForecast.getLocationID() == currentLocationID);
             if(isSameLocation && forecastLastDisplayed != null && Utils.dateDiff(Calendar.getInstance(), forecastLastDisplayed, TimeUnit.MINUTES) < 60){
+                Logger.exception("Suppressed error: " + errorMessage);
                 return;
             } else if(isSameLocation && forecastLastDisplayed != null){
                 errorMessage += "Forecast last displayed " + Utils.formatDate(forecastLastDisplayed, SurfForecastService.DATE_FORMAT);
@@ -151,8 +154,8 @@ public class MainActivity extends GenericActivity{
                     locationsSpinnner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
                         @Override
                         public void onItemSelected(AdapterView<?> parentView, View selectedItemView, int position, long id) {
-                            if (currentForecast != null && position < locations.size() && currentForecast.getLocationID() != locations.get(position).getID()) {
-                                pauseLocationUpdates = Calendar.getInstance();
+                            if(position < locations.size()) {
+                                pauseLocationUpdates = position == 0 ? null : Calendar.getInstance();
                                 getForecastForLocation(locations.get(position).getID());
                             }
                         }
@@ -162,10 +165,6 @@ public class MainActivity extends GenericActivity{
                             // your code here
                         }
                     });
-
-                    //
-                    pauseLocationUpdates = null;
-                    getForecastForLocation(locations.get(0).getID());
                 }
             }
         });
@@ -174,7 +173,7 @@ public class MainActivity extends GenericActivity{
     protected void getForecastForLocation(int locationID){
         //if the current forecast is for the same location then don't immediately go and get a new forecast
         //instead wait X minutes before doing so
-        if(currentForecast != null && currentForecast.getLocationID() == locationID && Utils.dateDiff(Calendar.getInstance(), forecastLastDisplayed, TimeUnit.MINUTES) < 20){
+        if(currentForecast != null && currentConditionsPage == 0 && currentForecast.getLocationID() == locationID && Utils.dateDiff(Calendar.getInstance(), forecastLastDisplayed, TimeUnit.MINUTES) < 20){
             return;
         }
 
@@ -198,9 +197,10 @@ public class MainActivity extends GenericActivity{
         //check if the request to set the current forecast doesn't require changing the data displayed
         //this differs from the wait in getForecastForLocation because it tests whether the feed run is the same
         //if it is the same then the data will be the same and there's no need for updating display
-        boolean forecastHasChanged = (currentForecast == null || currentForecast.getFeedRunID() != forecast.getFeedRunID() || currentForecast.getLocationID() != forecast.getLocationID());
+        boolean locationHasChanged = (currentForecast != null && currentForecast.getLocationID() != forecast.getLocationID());
+        boolean forecastHasChanged = (currentForecast == null || currentForecast.getFeedRunID() != forecast.getFeedRunID() || locationHasChanged);
         Calendar now = Calendar.getInstance();
-        if(!forecastHasChanged && Utils.dateDiff(now, forecastLastDisplayed, TimeUnit.MINUTES) < 25){
+        if(!forecastHasChanged && Utils.dateDiff(now, forecastLastDisplayed, TimeUnit.MINUTES) < 25 && currentConditionsPage == 0){
             showSurfConditions();
             hideProgress();
             return;
@@ -242,8 +242,7 @@ public class MainActivity extends GenericActivity{
         hideProgress();
         if(!expired) {
             ViewPager viewPager = findViewById(R.id.viewPager);
-            int cp = viewPager.getCurrentItem();
-
+            currentConditionsPage = viewPager.getCurrentItem();
 
             surfConditionsAdapter.setForecast(forecast);
             if (currentForecast == null) { //first time this is ever called
@@ -258,6 +257,7 @@ public class MainActivity extends GenericActivity{
                     @Override
                     public void onPageSelected(int i) {
                         pauseLocationUpdates = Calendar.getInstance();
+                        currentConditionsPage = i;
                     }
 
                     @Override
@@ -268,8 +268,10 @@ public class MainActivity extends GenericActivity{
 
                 TabLayout tabLayout = findViewById(R.id.tabLayout);
                 tabLayout.setupWithViewPager(viewPager);
+            } else if(pauseLocationUpdates == null) {
+                viewPager.setCurrentItem(0);
             } else {
-                viewPager.setCurrentItem(cp);
+                viewPager.setCurrentItem(currentConditionsPage);
             }
 
             showSurfConditions();
@@ -277,5 +279,6 @@ public class MainActivity extends GenericActivity{
 
         currentForecast = forecast;
         forecastLastDisplayed = now;
+        Logger.info("Forecast displayed for location ID " + forecast.getLocationID());
     }
 }

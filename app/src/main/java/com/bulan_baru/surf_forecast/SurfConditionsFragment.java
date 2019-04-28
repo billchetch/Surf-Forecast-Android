@@ -83,8 +83,10 @@ public class SurfConditionsFragment extends Fragment {
             try {
 
                 String title = Utils.formatDate(fh.date, "HH:mm");
+                float alpha = 1.0f;
                 if(startsToday && Utils.isTomorrow(fh.date, forecast.now())){
                     title = title + " (+1 day)";
+                    alpha = 0.6f;
                 }
 
                 Integer rating = 0;
@@ -94,6 +96,7 @@ public class SurfConditionsFragment extends Fragment {
                 for (int j = 1; j <= starIDs.length; j++) {
                     ImageView iv = sc.findViewById(starIDs[j - 1]);
                     iv.setVisibility(j <= rating ? View.VISIBLE : View.INVISIBLE);
+                    iv.setAlpha(alpha);
                 }
 
                 String sh = Utils.convert(fh.getSwellHeight(), Utils.Conversions.METERS_2_FEET, 0) + " ft";
@@ -101,12 +104,14 @@ public class SurfConditionsFragment extends Fragment {
                 float swellDirection = Float.parseFloat(fh.getSwellDirection());
                 ImageView iv = sc.findViewById(R.id.swellDirectionIcon);
                 iv.setRotation(swellDirection);
+                iv.setAlpha(alpha);
                 int deg = (int) ((swellDirection + 180) % 360);
                 String sd = Utils.convert(deg, Utils.Conversions.DEG_2_COMPASS) + " (" + deg + " deg)";
 
                 float windDirection = Float.parseFloat(fh.getWindDirection());
                 iv = sc.findViewById(R.id.windDirectionIcon);
                 iv.setRotation(windDirection);
+                iv.setAlpha(alpha);
                 String ws = Utils.convert(fh.getWindSpeed(), Utils.Conversions.KPH_2_MPH, 0) + " mph";
                 deg = (int) ((windDirection + 180) % 360);
                 String wd = Utils.convert(deg, Utils.Conversions.DEG_2_COMPASS) + " (" + deg + " deg)";
@@ -115,17 +120,31 @@ public class SurfConditionsFragment extends Fragment {
                 String ts = fh.getTidePosition() != null ? tidePositions[fh.getTidePosition()] : "";
                 iv = sc.findViewById(R.id.tideDirection);
                 iv.setRotation(fh.getTidePosition() < 5 ? 0f : 180f);
+                iv.setAlpha(alpha);
 
                 //set the display
-                ((TextView) sc.findViewById(R.id.conditionsTitle)).setText(title);
+                TextView tv = sc.findViewById(R.id.conditionsTitle);
+                tv.setText(title);
+                tv.setAlpha(alpha);
 
-                ((TextView) sc.findViewById(R.id.swellHeightAndPeriod)).setText(sh + " @ " + sp);
-                ((TextView) sc.findViewById(R.id.swellDirection)).setText(sd);
+                tv = sc.findViewById(R.id.swellHeightAndPeriod);
+                tv.setAlpha(alpha);
+                tv.setText(sh + " @ " + sp);
+                tv.setAlpha(alpha);
+                tv = sc.findViewById(R.id.swellDirection);
+                tv.setText(sd);
+                tv.setAlpha(alpha);
 
-                ((TextView) sc.findViewById(R.id.windSpeed)).setText(ws);
-                ((TextView) sc.findViewById(R.id.windDirection)).setText(wd);
+                tv = sc.findViewById(R.id.windSpeed);
+                tv.setText(ws);
+                tv.setAlpha(alpha);
+                tv =  sc.findViewById(R.id.windDirection);
+                tv.setText(wd);
+                tv.setAlpha(alpha);
 
-                ((TextView) sc.findViewById(R.id.tideHeightAndStatus)).setText(th + ", " + ts);
+                tv = sc.findViewById(R.id.tideHeightAndStatus);
+                tv.setText(th + ", " + ts);
+                tv.setAlpha(alpha);
 
                 surfConditionsLayout.addView(sc);
             } catch (Exception e){ //currently just don't add the information if there is an exception (normally NULL pointer exception)
