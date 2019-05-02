@@ -19,7 +19,28 @@
         <item>50</item>
         <item>100</item>
     </string-array>
+
+    <string name="settings.restart_after.prompt">Select number of hours application runs without a restart</string>
+    <string-array name="settings.restart_after.labels" translatable="false">
+        <item>Do not restart</item>
+        <item>3 hours</item>
+        <item>6 hours</item>
+        <item>12 hours</item>
+        <item>24 hours</item>
+        <item>48 hours</item>
+    </string-array>
+    <string-array name="settings.restart_after.values" translatable="false">
+        <item>-1</item>
+        <item>3</item>
+        <item>6</item>
+        <item>12</item>
+        <item>24</item>
+        <item>48</item>
+    </string-array>
+
+
     <string name="menus.options_menu.settings">Settings</string>
     <string name="menus.options_menu.about">About</string>
     <string name="menus.options_menu.help">Help</string>
+
 </resources>

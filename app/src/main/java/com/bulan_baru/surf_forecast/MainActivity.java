@@ -41,6 +41,7 @@ public class MainActivity extends GenericActivity{
     private int currentConditionsPage = -1;
     private Calendar pauseLocationUpdates;
     private boolean noForecastForLocationError = false;
+    private int lastShownErrorCode;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -94,13 +95,15 @@ public class MainActivity extends GenericActivity{
         if(errorCode == SurfForecastRepository.ERROR_SERVICE_UNREACHABLE){
             boolean isSameLocation = (currentForecast != null && currentForecast.getLocationID() == currentLocationID);
             if(isSameLocation && forecastLastDisplayed != null && Utils.dateDiff(Calendar.getInstance(), forecastLastDisplayed, TimeUnit.MINUTES) < 60){
-                Logger.exception("Suppressed error: " + errorMessage);
+                Logger.error("Suppressed error: " + errorMessage);
                 return;
             } else if(isSameLocation && forecastLastDisplayed != null){
                 errorMessage += "Forecast last displayed " + Utils.formatDate(forecastLastDisplayed, SurfForecastService.DATE_FORMAT);
             }
         }
 
+        lastShownErrorCode = errorCode;
+        Logger.error("Shown error: " + errorMessage);
         super.showError(errorCode, errorMessage);
     }
 
@@ -134,6 +137,13 @@ public class MainActivity extends GenericActivity{
         }
 
         ((MainViewModel)viewModel).getLocationsNearby().observe(this, locations -> {
+            //we have a successful return so if there was a service unreachable error earlier that is still showing
+            //then we can dismiss it here
+            if(isErrorShowing() && lastShownErrorCode == SurfForecastRepository.ERROR_SERVICE_UNREACHABLE){
+                dismissError();
+            }
+
+            //now fill in the locations
             if(locations.size() > 0) {
                 TypeConverter<Location,String> tc = new TypeConverter<Location,String>(){
                     @Override
@@ -279,6 +289,7 @@ public class MainActivity extends GenericActivity{
 
         currentForecast = forecast;
         forecastLastDisplayed = now;
+
         Logger.info("Forecast displayed for location ID " + forecast.getLocationID());
     }
 }

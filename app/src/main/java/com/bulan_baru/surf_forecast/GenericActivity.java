@@ -35,7 +35,7 @@ public class GenericActivity extends AppCompatActivity{
     protected boolean includeOptionsMenu = true;
     protected boolean includeLocation = true;
 
-    private DialogFragment errorDialog;
+    private ErrorDialogFragment errorDialog;
 
     BroadcastReceiver receivePermissionRequests;
     BroadcastReceiver receiveLocationUpdates;
@@ -245,10 +245,18 @@ public class GenericActivity extends AppCompatActivity{
     public void showError(int errorCode, String errorMessage){
         Log.e("GAERROR", errorMessage);
         hideProgress();
-        if(errorDialog != null)errorDialog.dismiss();
+        dismissError();
 
         errorDialog = new ErrorDialogFragment(errorCode, errorMessage);
         errorDialog.show(getSupportFragmentManager(), "ErrorDialog");
+    }
+
+    public boolean isErrorShowing(){
+        return errorDialog == null ? false : errorDialog.isShowing();
+    }
+
+    public void dismissError(){
+        if(errorDialog != null)errorDialog.dismiss();
     }
 
     public void showProgress(int visibility){

@@ -13,7 +13,7 @@ public class Logger {
     private static String logFile;
     private static String lineFeed = "\n";
     private static String tabSpace = "\t";
-    private static int maxLineCount = 1000;
+    private static int maxLineCount = 100;
     private static String dateFormat = "yyyy-MM-dd HH:mm:ss";
 
     public static void init(Context context, String filename){
@@ -84,5 +84,9 @@ public class Logger {
 
     public static boolean exception(String s){
         return write("EXCEPTION", s);
+    }
+
+    public static boolean error(String s){
+        return write("ERROR", s);
     }
 }

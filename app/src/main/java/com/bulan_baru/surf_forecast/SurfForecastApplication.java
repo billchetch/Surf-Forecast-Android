@@ -11,6 +11,7 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
+import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.support.v4.app.DialogFragment;
@@ -24,11 +25,28 @@ import com.bulan_baru.surf_forecast_data.utils.Logger;
 import com.bulan_baru.surf_forecast_data.utils.UncaughtExceptionHandler;
 import com.bulan_baru.surf_forecast_data.utils.Utils;
 
+import java.util.Calendar;
+import java.util.concurrent.TimeUnit;
+
 
 public class SurfForecastApplication extends Application {
     static public final String LOG_FILE = "bbsf.log";
+    static private final int TIMER_DELAY_IN_MILLIS = 5*Utils.MINUTE_IN_MILLIS;
 
     RepositoryComponent repositoryComponent;
+
+    Handler timerHandler = new Handler();
+    Runnable timerRunnable = new Runnable() {
+        @Override
+        public void run() {
+            onTimer();
+
+            timerHandler.postDelayed(this, TIMER_DELAY_IN_MILLIS);
+        }
+    };
+
+    private Calendar appStarted;
+    private int restartAfter = 0;
 
     @Override
     public void onCreate() {
@@ -64,6 +82,8 @@ public class SurfForecastApplication extends Application {
         float maxDistance = sharedPref.getFloat("max_distance", -1);
         repositoryComponent.getRepository().setMaxDistance(maxDistance);
 
+        restartAfter = sharedPref.getInt("restart_app_after", 12);
+
         //add a network change listener to handle network state changes
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(WifiManager.NETWORK_STATE_CHANGED_ACTION);
@@ -73,6 +93,28 @@ public class SurfForecastApplication extends Application {
                     setDeviceNetwork();
                 }
             }, intentFilter);
+
+
+        //fire up timer
+        timerHandler.postDelayed(timerRunnable, TIMER_DELAY_IN_MILLIS);
+        appStarted = Calendar.getInstance();
+
+    }
+
+    protected void onTimer(){
+        //check how long we've been running for and restart if more than a given time
+
+        if(restartAfter < 0)return;
+        long h = Utils.hoursDiff(Calendar.getInstance(), appStarted);
+        if(h >= restartAfter){
+            Logger.info("Application has been running for " + h + " hours so restarting");
+            restartApp(2);
+        }
+
+    }
+
+    public void setRestartAfter(int restartAfter){
+        this.restartAfter = restartAfter;
     }
 
     public void restartApp(int delayInSecs){
@@ -82,11 +124,12 @@ public class SurfForecastApplication extends Application {
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(intent);
 
-        PendingIntent pendingIntent = PendingIntent.getActivity(getBaseContext(), 0, intent, intent.getFlags());
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, intent.getFlags());
 
         AlarmManager mgr = (AlarmManager) getBaseContext().getSystemService(Context.ALARM_SERVICE);
         mgr.set(AlarmManager.RTC, System.currentTimeMillis() + 1000*delayInSecs, pendingIntent);
 
+        Logger.info("Restarting app in " + delayInSecs + " seconds");
         System.exit(0);
     }
 

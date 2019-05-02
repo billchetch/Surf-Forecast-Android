@@ -15,12 +15,16 @@ public class ErrorDialogFragment extends AppCompatDialogFragment implements OnCl
     private String errorMessage;
     private Dialog dialog;
 
-    ErrorDialogFragment(int errorType, String errorMessage){
+    public ErrorDialogFragment(int errorType, String errorMessage){
         this.errorType = errorType;
         this.errorMessage = errorMessage;
     }
 
     public int getErrorType(){ return errorType; }
+
+    public boolean isErrorType(int errorType){
+        return this.errorType == errorType;
+    }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {

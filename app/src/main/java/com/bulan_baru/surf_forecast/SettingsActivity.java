@@ -77,5 +77,10 @@ public class SettingsActivity extends AppCompatActivity implements SharedPrefere
             float maxDistance = sharedPreferences.getFloat(key, -1);
             ((SurfForecastApplication)getApplication()).repositoryComponent.getRepository().setMaxDistance(maxDistance);
         }
+
+        if(key.equals("restart_after")){
+            int restartAfter = Integer.parseInt(sharedPreferences.getString(key, "12"));
+            ((SurfForecastApplication)getApplication()).setRestartAfter(restartAfter);
+        }
     }
 }
