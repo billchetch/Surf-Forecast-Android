@@ -45,6 +45,10 @@ public class MainActivity extends GenericActivity{
     private boolean noForecastForLocationError = false;
     private int lastShownErrorCode;
 
+    private LocationDialogFragment locationDialog;
+    private Calendar locationInfoLastShown;
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(null);
@@ -141,10 +145,15 @@ public class MainActivity extends GenericActivity{
 
 
     @Override
+    //this function is called at regular intervals, either by a timer or by the system issuing location updates
     public void onDeviceLocationUpdated(ClientDevice device){
         if(pauseLocationUpdates != null && Utils.dateDiff(Calendar.getInstance(), pauseLocationUpdates, TimeUnit.SECONDS) < 30){
             Log.i(LOG_TAG,"Location updates paused");
             return;
+        }
+
+        if(locationInfoLastShown != null && Utils.dateDiff(Calendar.getInstance(), locationInfoLastShown, TimeUnit.SECONDS) < 30){
+            closeLocationInfo();
         }
 
         ((MainViewModel)viewModel).getLocationsNearby().observe(this, locations -> {
@@ -227,6 +236,7 @@ public class MainActivity extends GenericActivity{
             hideProgress();
             return;
         }
+
 
         //if here the forecast being set is different from the one that is already set ... or it's the first forecast being set
         //... or a certain time has elapsed
@@ -312,7 +322,13 @@ public class MainActivity extends GenericActivity{
 
     public void openLocationInfo(Location location){
         Log.i(LOG_TAG, "Open location info");
-        DialogFragment dialog = new LocationDialogFragment(location);
-        dialog.show(getSupportFragmentManager(), "LocationDialog");
+        locationDialog = new LocationDialogFragment(location);
+        locationDialog.show(getSupportFragmentManager(), "LocationDialog");
+        locationInfoLastShown = Calendar.getInstance();
+    }
+
+    public void closeLocationInfo(){
+        if(locationDialog != null)locationDialog.dismiss();
+        locationInfoLastShown = null;
     }
 }
