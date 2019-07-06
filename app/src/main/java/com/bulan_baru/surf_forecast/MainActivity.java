@@ -5,9 +5,11 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.design.widget.TabLayout;
+import android.support.v4.app.DialogFragment;
 import android.support.v4.view.ViewPager;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -34,7 +36,7 @@ import java.util.concurrent.TimeUnit;
 public class MainActivity extends GenericActivity{
     private static final String LOG_TAG = "Main";
 
-    private int currentLocationID;
+    private Location currentLocation;
     private Forecast currentForecast;
     private SurfConditionsFragmentAdapter surfConditionsAdapter;
     private Calendar forecastLastDisplayed;
@@ -61,6 +63,15 @@ public class MainActivity extends GenericActivity{
             onDeviceLocationUpdated(null);
             startTimer(30);
         }
+
+        View locationInfo = findViewById(R.id.locationInfo);
+        locationInfo.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Log.i(LOG_TAG, "Clicked info baby ... location " + currentLocation.getID());
+                if(currentLocation != null)openLocationInfo(currentLocation);
+            }
+        });
     }
 
     @Override
@@ -93,7 +104,7 @@ public class MainActivity extends GenericActivity{
 
         //suppress service unreachable errors if they occur when just refreshing data and are less than an hour old
         if(errorCode == SurfForecastRepository.ERROR_SERVICE_UNREACHABLE){
-            boolean isSameLocation = (currentForecast != null && currentForecast.getLocationID() == currentLocationID);
+            boolean isSameLocation = (currentForecast != null && currentLocation != null && currentForecast.getLocationID() == currentLocation.getID());
             if(isSameLocation && forecastLastDisplayed != null && Utils.dateDiff(Calendar.getInstance(), forecastLastDisplayed, TimeUnit.MINUTES) < 60){
                 Logger.error("Suppressed error: " + errorMessage);
                 return;
@@ -166,7 +177,7 @@ public class MainActivity extends GenericActivity{
                         public void onItemSelected(AdapterView<?> parentView, View selectedItemView, int position, long id) {
                             if(position < locations.size()) {
                                 pauseLocationUpdates = position == 0 ? null : Calendar.getInstance();
-                                getForecastForLocation(locations.get(position).getID());
+                                getForecastForLocation(locations.get(position));
                             }
                         }
 
@@ -180,23 +191,24 @@ public class MainActivity extends GenericActivity{
         });
     }
 
-    protected void getForecastForLocation(int locationID){
+    protected void getForecastForLocation(Location location){
+
         //if the current forecast is for the same location then don't immediately go and get a new forecast
         //instead wait X minutes before doing so
-        if(currentForecast != null && currentConditionsPage == 0 && currentForecast.getLocationID() == locationID && Utils.dateDiff(Calendar.getInstance(), forecastLastDisplayed, TimeUnit.MINUTES) < 20){
+        if(currentForecast != null && currentLocation != null && currentConditionsPage == 0 && currentForecast.getLocationID() == location.getID() && Utils.dateDiff(Calendar.getInstance(), forecastLastDisplayed, TimeUnit.MINUTES) < 20){
             return;
         }
 
         //if there is a request to get the forecast for the same location that produced a noForecastForLocation error then return instead
-        if(currentLocationID == locationID && noForecastForLocationError){
+        if(currentLocation != null && currentLocation.getID() == location.getID() && noForecastForLocationError){
             return;
         }
 
-        currentLocationID = locationID;
+        currentLocation = location;
         noForecastForLocationError = false;
         hideSurfConditions();
         showProgress();
-        ((MainViewModel)viewModel).getForecast(currentLocationID).observe(this, forecast -> {
+        ((MainViewModel)viewModel).getForecast(currentLocation.getID()).observe(this, forecast -> {
 
             setCurrentForecast(forecast);
 
@@ -222,14 +234,17 @@ public class MainActivity extends GenericActivity{
         TimeZone tz = TimeZone.getTimeZone("UTC");
         Calendar cal = Calendar.getInstance(tz);
         long hoursDiff = Utils.dateDiff(cal, Utils.date2cal(forecast.getCreated()), TimeUnit.HOURS);
+        int ageOfForecast = 0; //scale of 0 to 4
         if(hoursDiff <= 0){
             s+= "just now";
         } else if (hoursDiff < 24) {
             s+= Utils.round2string(hoursDiff, 0);
             s+= hoursDiff == 1 ? " hour" : " hours";
             s+= " ago";
+            ageOfForecast = 1;
         } else if(hoursDiff >= 24){
             double days = Math.floor(hoursDiff/24);
+            ageOfForecast = Math.max((int)days, 4);
             hoursDiff = hoursDiff - (long)days*24;
             s += Utils.round2string(days, 0) + (days > 1 ? " days" : " day");
             s += (hoursDiff > 0 ? " and " + hoursDiff + " hours" : "") + " ago";
@@ -246,8 +261,10 @@ public class MainActivity extends GenericActivity{
             s = "Forecast times @ " + stz + " GMT ........ " + s;
         }
 
+        //set text and colour (using ageOfForecast)
         TextView forecastInfo = findViewById(R.id.forecastInfo);
         forecastInfo.setText(s);
+
 
         hideProgress();
         if(!expired) {
@@ -291,5 +308,11 @@ public class MainActivity extends GenericActivity{
         forecastLastDisplayed = now;
 
         Logger.info("Forecast displayed for location ID " + forecast.getLocationID());
+    }
+
+    public void openLocationInfo(Location location){
+        Log.i(LOG_TAG, "Open location info");
+        DialogFragment dialog = new LocationDialogFragment(location);
+        dialog.show(getSupportFragmentManager(), "LocationDialog");
     }
 }

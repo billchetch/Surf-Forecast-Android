@@ -9,6 +9,7 @@ public class Location extends DataObject {
     private double longitude;
     private double distance;
     private String timezone;
+    private String description;
 
     public void setLocation(String location){
         this.location = location;
@@ -26,6 +27,8 @@ public class Location extends DataObject {
     public double getDistance(){ return distance; }
 
     public String getTimezone(){ return timezone; }
+
+    public String getDescription(){ return description; }
 
     @Override
     public String toString(){

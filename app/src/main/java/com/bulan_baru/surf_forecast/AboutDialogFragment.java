@@ -67,8 +67,7 @@ public class AboutDialogFragment extends AppCompatDialogFragment {
             ltv.setText(logData);
         }
 
-        builder.setView(contentView)
-                .setTitle(R.string.app_name);
+        builder.setView(contentView).setTitle(R.string.app_name);
 
         //set clear log button
         Button clearLogButton = contentView.findViewById(R.id.clearLogButton);

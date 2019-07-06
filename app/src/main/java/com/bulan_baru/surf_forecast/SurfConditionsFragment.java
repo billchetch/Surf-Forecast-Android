@@ -148,7 +148,7 @@ public class SurfConditionsFragment extends Fragment {
 
                 surfConditionsLayout.addView(sc);
             } catch (Exception e){ //currently just don't add the information if there is an exception (normally NULL pointer exception)
-                Log.e(LOG_TAG, e.getMessage());
+                Log.e(LOG_TAG, e.getMessage() == null ? "NULL" : e.getMessage());
             }
         }
 
