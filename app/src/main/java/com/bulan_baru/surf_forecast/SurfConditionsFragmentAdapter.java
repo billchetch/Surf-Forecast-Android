@@ -12,6 +12,7 @@ import com.bulan_baru.surf_forecast_data.ForecastDay;
 import com.bulan_baru.surf_forecast_data.ForecastHour;
 import com.bulan_baru.surf_forecast_data.utils.Utils;
 
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -27,6 +28,7 @@ public class SurfConditionsFragmentAdapter extends FragmentPagerAdapter {
     private Context context;
     private Forecast forecast;
     private List<Calendar> dates;
+    private List<List<ForecastHour>> hourSpreads;
 
 
     public SurfConditionsFragmentAdapter(Context context, FragmentManager fm) {
@@ -48,13 +50,14 @@ public class SurfConditionsFragmentAdapter extends FragmentPagerAdapter {
         //start by getting some important dates
         Calendar startDate = forecast.now(); //get 'now' with forecast timezone applied
         if(forecast.now().getTimeInMillis() < forecast.getForecastFrom().getTimeInMillis()){
-            startDate = forecast.getForecastFrom();
+            startDate = Utils.calendarSetHour(forecast.getForecastFrom(), startDate.get(Calendar.HOUR_OF_DAY));
         }
         Calendar firstLight = forecast.getFirstLight(startDate);
         Calendar lastLight = forecast.getLastLight(startDate);
         Calendar tomorrow = (Calendar)startDate.clone();
         tomorrow.add(Calendar.DATE, 1);
 
+        int minInterval = MIN_INTERVAL;
         //check if the forecast is for today or tomorrow
         if(startDate.compareTo(firstLight) < 0){ //before first light then we want forecast from first light
             startDate = firstLight;
@@ -63,19 +66,19 @@ public class SurfConditionsFragmentAdapter extends FragmentPagerAdapter {
             startDate = forecast.getFirstLight(tomorrow);
             startDate = Utils.calendarSetHour(startDate, startDate.get(Calendar.HOUR_OF_DAY) + 1);
         } else { //we are somewhere between first light and last light today
-            long diff = Utils.dateDiff(lastLight, startDate, TimeUnit.HOURS);
-            if(diff <= MIN_INTERVAL && MIN_INTERVAL > 1){
-                startDate = Utils.calendarSetHour(lastLight, lastLight.get(Calendar.HOUR_OF_DAY));
-            } else {
-                startDate = Utils.calendarSetHour(startDate, startDate.get(Calendar.HOUR_OF_DAY) + 1);
-            }
+            minInterval = Math.min((int)Utils.dateDiff(lastLight, startDate, TimeUnit.HOURS), MIN_INTERVAL);
+            startDate = Utils.calendarSetHour(startDate, startDate.get(Calendar.HOUR_OF_DAY) + 1);
         }
+
+        hourSpreads = new ArrayList<>();
+        hourSpreads.add(forecast.getHoursSpread(startDate, STEPS, minInterval, MAX_INTERVAL));
 
         //sanitise remaining days so they all start from first light
         dates = Utils.getDates(startDate, forecast.getForecastTo());
         for(int i = 1; i < dates.size(); i++){
             firstLight = forecast.getFirstLight(dates.get(i));
             dates.set(i, Utils.calendarSetHour(firstLight, firstLight.get(Calendar.HOUR_OF_DAY) + 1));
+            hourSpreads.add(forecast.getHoursSpread(dates.get(i), STEPS, MIN_INTERVAL, MAX_INTERVAL));
         }
         notifyDataSetChanged();
     }
@@ -87,7 +90,7 @@ public class SurfConditionsFragmentAdapter extends FragmentPagerAdapter {
         SurfConditionsFragment scf = new SurfConditionsFragment();
 
         Calendar cal = dates.get(position);
-        scf.setForecast(forecast, cal, STEPS, MIN_INTERVAL, MAX_INTERVAL);
+        scf.setForecast(forecast, cal, hourSpreads.get(position));
         return scf;
     }
 

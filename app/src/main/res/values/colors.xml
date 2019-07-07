@@ -9,6 +9,7 @@
     <color name="mediumGrey">#999999</color>
     <color name="mediumnDarkGrey">#666666</color>
     <color name="darkGrey">#333333</color>
+    <color name="dialogBg">#CC333333</color>
     <color name="vdarkGrey">#222222</color>
     <color name="bluegreen">#7cdad2</color>
 </resources>

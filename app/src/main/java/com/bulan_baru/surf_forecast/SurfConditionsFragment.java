@@ -33,9 +33,9 @@ public class SurfConditionsFragment extends Fragment {
         //empty constructor.
     }
 
-    public void setForecast(Forecast forecast, Calendar cal, int steps, int minInterval, int maxInterval){
+    public void setForecast(Forecast forecast, Calendar cal, List<ForecastHour> forecastHours){
         this.forecast = forecast;
-        this.forecastHours = forecast.getHoursSpread(cal, steps, minInterval, maxInterval);
+        this.forecastHours = forecastHours;
         if(this.forecastHours == null){
             throw new NullPointerException("forecastHours cannot be null");
         }

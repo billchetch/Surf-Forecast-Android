@@ -4,18 +4,30 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/darkGrey">
+    android:background="@drawable/dialog_background">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:layout_margin="16dp"
         android:orientation="vertical"
+        tools:layout_editor_absoluteX="10dp"
         tools:layout_editor_absoluteY="50dp">
+
+        <TextView
+            android:id="@+id/locationTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="TextView"
+            android:textColor="@color/lightGrey"
+            android:textSize="24sp"
+            android:textStyle="bold" />
 
         <ScrollView
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_weight="1">
+            android:layout_weight="1"
+            app:layout_constraintTop_toBottomOf="@+id/locationTitle">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -27,9 +39,10 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="24dp"
-                    android:layout_marginEnd="24dp"
-                    android:layout_marginStart="24dp"
+                    android:layout_marginLeft="2dp"
+                    android:layout_marginRight="2dp"
                     android:layout_marginTop="16dp"
+                    android:lineSpacingMultiplier="1.5"
                     android:text="TextView"
                     android:textColor="@color/lightGrey"
                     android:textSize="18sp"

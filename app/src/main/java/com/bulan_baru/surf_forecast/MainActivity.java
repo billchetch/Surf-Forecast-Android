@@ -152,7 +152,7 @@ public class MainActivity extends GenericActivity{
             return;
         }
 
-        if(locationInfoLastShown != null && Utils.dateDiff(Calendar.getInstance(), locationInfoLastShown, TimeUnit.SECONDS) < 30){
+        if(locationInfoLastShown != null && Utils.dateDiff(Calendar.getInstance(), locationInfoLastShown, TimeUnit.SECONDS) > 30){
             closeLocationInfo();
         }
 
