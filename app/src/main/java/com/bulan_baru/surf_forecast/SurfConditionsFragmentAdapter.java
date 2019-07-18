@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
 public class SurfConditionsFragmentAdapter extends FragmentPagerAdapter {
 
     private final static int STEPS = 3;
-    private final static int MIN_INTERVAL = 4;
+    private final static int MIN_INTERVAL = 2;
     private final static int MAX_INTERVAL = 6;
 
 
@@ -57,21 +57,22 @@ public class SurfConditionsFragmentAdapter extends FragmentPagerAdapter {
         Calendar tomorrow = (Calendar)startDate.clone();
         tomorrow.add(Calendar.DATE, 1);
 
-        int minInterval = MIN_INTERVAL;
         //check if the forecast is for today or tomorrow
         if(startDate.compareTo(firstLight) < 0){ //before first light then we want forecast from first light
             startDate = firstLight;
-            startDate = Utils.calendarSetHour(startDate, startDate.get(Calendar.HOUR_OF_DAY) + 1);
+            int shift = firstLight.get(Calendar.MINUTE) > 30 ? 1 : 0;
+            //TODO: currently hours spread doesn't allow hours outside daylight so this 'shift' has no effect atm.
+            startDate = Utils.calendarSetHour(startDate, startDate.get(Calendar.HOUR_OF_DAY) + shift);
         } else if(startDate.compareTo(lastLight) > 0){ //after last light so we want forecast from first light tomorrow
             startDate = forecast.getFirstLight(tomorrow);
             startDate = Utils.calendarSetHour(startDate, startDate.get(Calendar.HOUR_OF_DAY) + 1);
         } else { //we are somewhere between first light and last light today
-            minInterval = Math.min((int)Utils.dateDiff(lastLight, startDate, TimeUnit.HOURS), MIN_INTERVAL);
-            startDate = Utils.calendarSetHour(startDate, startDate.get(Calendar.HOUR_OF_DAY) + 1);
+            int shift = (startDate.get(Calendar.HOUR_OF_DAY) == lastLight.get(Calendar.HOUR_OF_DAY) || startDate.get(Calendar.MINUTE) < 15) ? 0 : 1;
+            startDate = Utils.calendarSetHour(startDate, startDate.get(Calendar.HOUR_OF_DAY) + shift);
         }
 
         hourSpreads = new ArrayList<>();
-        hourSpreads.add(forecast.getHoursSpread(startDate, STEPS, minInterval, MAX_INTERVAL));
+        hourSpreads.add(forecast.getHoursSpread(startDate, STEPS, MIN_INTERVAL, MAX_INTERVAL));
 
         //sanitise remaining days so they all start from first light
         dates = Utils.getDates(startDate, forecast.getForecastTo());

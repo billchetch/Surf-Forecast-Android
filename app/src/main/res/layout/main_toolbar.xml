@@ -36,6 +36,10 @@
             android:layout_height="wrap_content"
             android:layout_weight="0"
             android:clickable="true"
+            android:paddingBottom="6dp"
+            android:paddingLeft="12dp"
+            android:paddingRight="32dp"
+            android:paddingTop="6dp"
             app:srcCompat="@drawable/ic_info_white_24dp" />
 
         <TextView
