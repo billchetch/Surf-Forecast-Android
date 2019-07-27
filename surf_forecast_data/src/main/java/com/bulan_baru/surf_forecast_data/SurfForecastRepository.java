@@ -30,6 +30,7 @@ public class SurfForecastRepository{
     private static final String LOG_TAG = "SF Repo";
 
     private SurfForecastServiceManager serviceManager;
+    private ServerStatus serverStatus;
     private ClientDevice device;
     private boolean serviceAvailable = true;
     private Calendar serviceLastAvailable = null;
@@ -116,6 +117,7 @@ public class SurfForecastRepository{
     }
 
     public ClientDevice getClientDevice(){ return this.device; }
+    public LiveData<ClientDevice> clientDevice(){ return this.liveDataDevice; }
 
     public LiveData<SurfForecastRepositoryException> repositoryError(){ return liveDataRepositoryError; }
 
@@ -143,6 +145,30 @@ public class SurfForecastRepository{
         return digest;
     }
 
+    public ServerStatus getLastServerStatus(){ return serverStatus; }
+
+    public LiveData<ServerStatus> getServerStatus(){
+        final MutableLiveData<ServerStatus> serverStatusLiveData = new MutableLiveData<>();
+
+        SurfForecastService service = getService();
+        if(service != null) {
+            service.getServerStatus().enqueue(
+                    new SurfForecastServiceCallback<ServerStatus>(liveDataServiceError) {
+                        @Override
+                        public void handleResponse(Call<ServerStatus> call, Response<ServerStatus> response) {
+                            serverStatus = response.body();
+                            serverStatusLiveData.setValue(serverStatus);
+
+                            if(!isUsingDeviceLocation()){
+                                updateDeviceLocation(serverStatus.getLocation());
+                            }
+                        }
+                    }
+            );
+        }
+        return serverStatusLiveData;
+    }
+
     public LiveData<ClientDevice> updateDeviceLocation(android.location.Location location){
         if(device != null) {
             if(location != null) {
@@ -163,26 +189,14 @@ public class SurfForecastRepository{
 
         SurfForecastService service = getService();
         if(service != null) {
-            if(isUsingDeviceLocation()){
-                service.getLocations(device.getLatitude(), device.getLongitude(), maxDistance).enqueue(
-                        new SurfForecastServiceCallback<List<Location>>(liveDataServiceError) {
-                            @Override
-                            public void handleResponse(Call<List<Location>> call, Response<List<Location>> response) {
-                                locations.setValue(response.body());
-                            }
+            service.getLocations(device.getLatitude(), device.getLongitude(), maxDistance).enqueue(
+                    new SurfForecastServiceCallback<List<Location>>(liveDataServiceError) {
+                        @Override
+                        public void handleResponse(Call<List<Location>> call, Response<List<Location>> response) {
+                            locations.setValue(response.body());
                         }
-                );
-            } else {
-                //since not using the location of the device, we choose to use the location provided by the server ...
-                service.getLocationsNearby(maxDistance).enqueue(
-                        new SurfForecastServiceCallback<List<Location>>(liveDataServiceError) {
-                            @Override
-                            public void handleResponse(Call<List<Location>> call, Response<List<Location>> response) {
-                                locations.setValue(response.body());
-                            }
-                        }
-                );
-            }
+                    }
+            );
         }
         return locations;
     }

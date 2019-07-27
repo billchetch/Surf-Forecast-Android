@@ -20,11 +20,13 @@ public class ClientDevice extends DataObject {
     @SerializedName("device_network")
     private String deviceNetwork;
 
+    //a flag to indicate that the location has been set properly (rather than just the default double 0 values)
     @SerializedName("is_location_set")
     private boolean isLocationSet = false;
 
     private double latitude = 0;
     private double longitude = 0;
+    private double distanceMoved = -1; //distance moved since last location update
 
     @SerializedName("location_accuracy")
     private float locationAccuracy = 0;
@@ -53,6 +55,14 @@ public class ClientDevice extends DataObject {
     public double getLatitude(){ return this.latitude; }
     public void setLongitude(double longitude){this.longitude = longitude; isLocationSet = true; }
     public double getLongitude(){ return this.longitude; }
+
+    public Location getLocation(){
+        Location l = new Location("");
+        l.setLatitude(latitude);
+        l.setLongitude(longitude);
+        l.setAccuracy(locationAccuracy);
+        return l;
+    }
 
     public boolean hasLocation(){ return isLocationSet; }
 

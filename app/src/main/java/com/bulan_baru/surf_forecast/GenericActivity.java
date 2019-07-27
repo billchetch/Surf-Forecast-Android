@@ -9,6 +9,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.location.Location;
 import android.os.Bundle;
 import android.os.Handler;
 import java.lang.Thread.UncaughtExceptionHandler;
@@ -25,6 +26,7 @@ import android.widget.ProgressBar;
 import com.bulan_baru.surf_forecast_data.ClientDevice;
 import com.bulan_baru.surf_forecast_data.SurfForecastRepository;
 import com.bulan_baru.surf_forecast_data.SurfForecastRepositoryException;
+import com.bulan_baru.surf_forecast_data.services.LocationService;
 import com.bulan_baru.surf_forecast_data.utils.Utils;
 
 public class GenericActivity extends AppCompatActivity{
@@ -54,7 +56,9 @@ public class GenericActivity extends AppCompatActivity{
     };
 
     protected void onTimer(){
-        //stub method
+        if(!viewModel.isUsingDeviceLocation()) {
+            viewModel.getServerStatus();
+        }
     }
 
     protected void startTimer(int timerDelay){
@@ -89,45 +93,57 @@ public class GenericActivity extends AppCompatActivity{
             return;
         }
 
-        if(includeLocation && viewModel.isUsingDeviceLocation()) {
-            //permission requests
-            IntentFilter intentFilter = new IntentFilter();
-            intentFilter.addAction(SFLocationService.ACTION_REQUEST_PERMISSION);
-            receivePermissionRequests = new BroadcastReceiver() {
-                @Override
-                public void onReceive(Context context, Intent intent) {
-                    Log.i("REQUEST PERMISSION", "Requesting permission");
-                    ActivityCompat.requestPermissions(GenericActivity.this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_ACCESS_FINE_LOACTION);
-                }
-            };
-            registerReceiver(receivePermissionRequests, intentFilter);
+        if(includeLocation) {
+            if(viewModel.isUsingDeviceLocation()) {
+                //permission requests
+                IntentFilter intentFilter = new IntentFilter();
+                intentFilter.addAction(SFLocationService.ACTION_REQUEST_PERMISSION);
+                receivePermissionRequests = new BroadcastReceiver() {
+                    @Override
+                    public void onReceive(Context context, Intent intent) {
+                        Log.i("REQUEST PERMISSION", "Requesting permission");
+                        ActivityCompat.requestPermissions(GenericActivity.this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_ACCESS_FINE_LOACTION);
+                    }
+                };
+                registerReceiver(receivePermissionRequests, intentFilter);
 
-            //location updates
-            intentFilter = new IntentFilter();
-            intentFilter.addAction(SFLocationService.ACTION_UPDATED_LOCATION);
-            intentFilter.addAction(SFLocationService.ACTION_LOCATION_SERVICE_ERROR);
-            receiveLocationUpdates = new BroadcastReceiver() {
-                @Override
-                public void onReceive(Context context, Intent intent) {
-                    if(intent.getAction() == SFLocationService.ACTION_UPDATED_LOCATION) {
-                        ClientDevice device = viewModel.getClientDevice();
-                        if (device.getDeviceID() != null && device.getDeviceID().equals(intent.getStringExtra(SFLocationService.DEVICE_ID))) {
-                            device.setLongitude(intent.getDoubleExtra(SFLocationService.LONGITUDE, 0));
-                            device.setLatitude(intent.getDoubleExtra(SFLocationService.LATITUDE, 0));
-                            device.setLocationAccuracy(intent.getFloatExtra(SFLocationService.LOCATION_ACCURACY, 0));
-                            onDeviceLocationUpdated(device);
+                //location updates
+                intentFilter = new IntentFilter();
+                intentFilter.addAction(SFLocationService.ACTION_UPDATED_LOCATION);
+                intentFilter.addAction(SFLocationService.ACTION_LOCATION_SERVICE_ERROR);
+                receiveLocationUpdates = new BroadcastReceiver() {
+                    @Override
+                    public void onReceive(Context context, Intent intent) {
+                        if (intent.getAction() == SFLocationService.ACTION_UPDATED_LOCATION) {
+                            android.location.Location location = new Location("");
+                            location.setLongitude(intent.getDoubleExtra(LocationService.LONGITUDE, 0));
+                            location.setLatitude(intent.getDoubleExtra(LocationService.LATITUDE, 0));
+                            viewModel.getSurfForecastRepository().updateDeviceLocation(location);
+                        }
+                        //show errors
+                        if (intent.getAction() == SFLocationService.ACTION_LOCATION_SERVICE_ERROR) {
+                            showError(SFLocationService.getErrorType(intent), SFLocationService.getErrorMessage(intent));
                         }
                     }
+                };
+                registerReceiver(receiveLocationUpdates, intentFilter);
 
-                    if(intent.getAction() == SFLocationService.ACTION_LOCATION_SERVICE_ERROR) {
-                        showError(SFLocationService.getErrorType(intent), SFLocationService.getErrorMessage(intent));
-                    }
+                //fire up the service
+                startLocationUpdatesService();
+            } else {
+                //get server status as this will populate the client device location which will be picked up below
+                viewModel.getSurfForecastRepository().getServerStatus();
+
+                //start the timer so that we get frequent updates
+                startTimer(30);
+            }
+
+            //this will fire every time the client device is updated and has a location
+            viewModel.getSurfForecastRepository().clientDevice().observe(this, clientDevice -> {
+                if(clientDevice != null && clientDevice.hasLocation()){
+                    onDeviceUpdated(clientDevice);
                 }
-            };
-            registerReceiver(receiveLocationUpdates, intentFilter);
-
-            //after registering with location updates service we fire it up
-            startLocationUpdatesService();
+            });
         }
     }
 
@@ -146,6 +162,10 @@ public class GenericActivity extends AppCompatActivity{
         stopService(intent);
     }
 
+    protected void onDeviceUpdated(ClientDevice device){
+        //stub method
+    }
+
     @Override
     protected void onPause(){
         super.onPause();
@@ -157,10 +177,9 @@ public class GenericActivity extends AppCompatActivity{
 
         if (includeLocation && viewModel.isUsingDeviceLocation()) {
             stopLocationUpdatesService();
-
-            unregisterReceiver(receivePermissionRequests);
-            unregisterReceiver(receiveLocationUpdates);
         }
+        if(receivePermissionRequests != null)unregisterReceiver(receivePermissionRequests);
+        if(receiveLocationUpdates != null)unregisterReceiver(receiveLocationUpdates);
 
         if(timerStarted)stopTimer();
     }
@@ -211,11 +230,6 @@ public class GenericActivity extends AppCompatActivity{
             default:
                 break;
         }
-    }
-
-
-    public void onDeviceLocationUpdated(ClientDevice device){
-        //stub method
     }
 
     @Override

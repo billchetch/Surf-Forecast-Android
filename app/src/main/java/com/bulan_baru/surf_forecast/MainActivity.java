@@ -1,9 +1,7 @@
 package com.bulan_baru.surf_forecast;
 
 import android.arch.lifecycle.ViewModelProviders;
-import android.content.Intent;
 import android.os.Bundle;
-import android.os.Handler;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.DialogFragment;
 import android.support.v4.view.ViewPager;
@@ -36,6 +34,8 @@ import java.util.concurrent.TimeUnit;
 public class MainActivity extends GenericActivity{
     private static final String LOG_TAG = "Main";
 
+    private android.location.Location lastDeviceLocation;
+    private Calendar deviceLocationLastUpdated;
     private Location currentLocation;
     private Forecast currentForecast;
     private SurfConditionsFragmentAdapter surfConditionsAdapter;
@@ -62,12 +62,6 @@ public class MainActivity extends GenericActivity{
         hideSurfConditions();
         hideProgress();
 
-        if (!viewModel.isUsingDeviceLocation()) {
-            //then we need a timer
-            onDeviceLocationUpdated(null);
-            startTimer(30);
-        }
-
         View locationInfo = findViewById(R.id.locationInfo);
         locationInfo.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -78,10 +72,6 @@ public class MainActivity extends GenericActivity{
         });
     }
 
-    @Override
-    protected void onTimer(){
-        onDeviceLocationUpdated(null);
-    }
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {
@@ -145,17 +135,31 @@ public class MainActivity extends GenericActivity{
 
 
     @Override
-    //this function is called at regular intervals, either by a timer or by the system issuing location updates
-    public void onDeviceLocationUpdated(ClientDevice device){
+    protected void onDeviceUpdated(ClientDevice device){
+        //Remove location info in case it was opened by user and they forgot to close
+        if(locationInfoLastShown != null && Utils.dateDiff(Calendar.getInstance(), locationInfoLastShown, TimeUnit.SECONDS) > 30){
+            closeLocationInfo();
+        }
+
+        //check to see if the device has changed significanly (either in time period or in change of location in METERS)
+        if(lastDeviceLocation == null || lastDeviceLocation.distanceTo(device.getLocation()) > 500 || Utils.dateDiff(Calendar.getInstance(), deviceLocationLastUpdated, TimeUnit.SECONDS) > 2*60){
+            if(lastDeviceLocation != null)Log.i(LOG_TAG,"Location changed " + lastDeviceLocation.distanceTo(device.getLocation()) + " meters since " + Utils.dateDiff(Calendar.getInstance(), deviceLocationLastUpdated, TimeUnit.SECONDS) + " seconds ago");
+            lastDeviceLocation = device.getLocation();
+            deviceLocationLastUpdated = Calendar.getInstance();
+        } else if(pauseLocationUpdates == null) { //if not null then we have selected to view
+            Log.i(LOG_TAG,"Location not significantly updated ... distance traveled " + lastDeviceLocation.distanceTo(device.getLocation()) + " meters since " + Utils.dateDiff(Calendar.getInstance(), deviceLocationLastUpdated, TimeUnit.SECONDS) + " seconds ago");
+            return;
+        }
+
+        //check for a pause in requesting location list updates
         if(pauseLocationUpdates != null && Utils.dateDiff(Calendar.getInstance(), pauseLocationUpdates, TimeUnit.SECONDS) < 30){
             Log.i(LOG_TAG,"Location updates paused");
             return;
         }
 
-        if(locationInfoLastShown != null && Utils.dateDiff(Calendar.getInstance(), locationInfoLastShown, TimeUnit.SECONDS) > 30){
-            closeLocationInfo();
-        }
 
+        Log.i(LOG_TAG,"Retrieving locations...");
+        //here we request locations
         ((MainViewModel)viewModel).getLocationsNearby().observe(this, locations -> {
             //we have a successful return so if there was a service unreachable error earlier that is still showing
             //then we can dismiss it here
@@ -164,6 +168,7 @@ public class MainActivity extends GenericActivity{
             }
 
             //now fill in the locations
+            Log.i(LOG_TAG,"Retrieved " + locations.size() + " locations from server");
             if(locations.size() > 0) {
                 TypeConverter<Location,String> tc = new TypeConverter<Location,String>(){
                     @Override
@@ -197,7 +202,7 @@ public class MainActivity extends GenericActivity{
                     });
                 }
             }
-        });
+        }); //end listener for locations list return
     }
 
     protected void getForecastForLocation(Location location){

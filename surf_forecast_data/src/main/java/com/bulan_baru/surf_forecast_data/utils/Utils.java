@@ -43,7 +43,9 @@ public class Utils {
     final public static int MINUTE_IN_MILLIS = 1000*60;
     final public static int DAY_IN_MILLIS = 24*3600*1000;
 
-
+    /*
+    Conversion funcs
+    */
     public static String convert(String val, Conversions conversion, int dp){
         if(val == null)return val;
 
@@ -267,6 +269,15 @@ public class Utils {
         return Utils.date2cal(dateFormat.parse(dateString));
     }
 
+    /*
+    Distance funcs
+     */
+
+    //public static
+
+    /*
+    Network funcs
+     */
     public static boolean isNetworkAvailable(Context context){
         ConnectivityManager cm =
                 (ConnectivityManager)context.getSystemService(Context.CONNECTIVITY_SERVICE);
@@ -293,7 +304,9 @@ public class Utils {
     }
 
 
-    //FILE
+    /*
+    File funcs
+     */
     public static boolean writeFile(Context context, String filename, String data){
         try {
             FileOutputStream outputStream = context.openFileOutput(filename, Context.MODE_PRIVATE);

@@ -192,7 +192,7 @@ abstract public class LocationService extends Service {
         currentLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
 
         //location listener on Repository
-        repository.updateDeviceLocation(currentLocation).observeForever(clientDevice -> {
+        repository.clientDevice().observeForever(clientDevice -> {
             if(clientDevice != null){
                 onDeviceLocationUpdated(clientDevice);
             }
@@ -232,6 +232,7 @@ abstract public class LocationService extends Service {
         locationManager.removeUpdates(locationListener);
     }
 
+    //this is called to broadcast to any listeners that the client device has been updated with the latest location
     protected void onDeviceLocationUpdated(ClientDevice clientDevice){
 
         Intent intent = new Intent();

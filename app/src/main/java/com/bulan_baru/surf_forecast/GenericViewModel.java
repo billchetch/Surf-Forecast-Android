@@ -7,6 +7,7 @@ import android.location.Location;
 
 import com.bulan_baru.surf_forecast_data.ClientDevice;
 import com.bulan_baru.surf_forecast_data.Digest;
+import com.bulan_baru.surf_forecast_data.ServerStatus;
 import com.bulan_baru.surf_forecast_data.SurfForecastRepository;
 import com.bulan_baru.surf_forecast_data.SurfForecastRepositoryException;
 
@@ -21,13 +22,16 @@ public class GenericViewModel extends ViewModel {
         this.surfForecastRepository = surfForecastRepository;
     }
 
-    ClientDevice getClientDevice() {
-     return surfForecastRepository.getClientDevice();
-    }
-
     SurfForecastRepository getSurfForecastRepository(){ return surfForecastRepository; }
 
+    ClientDevice getClientDevice() {
+        return surfForecastRepository.getClientDevice();
+    }
+    LiveData<ClientDevice> clientDevice(){ return surfForecastRepository.clientDevice(); }
+
     boolean isUsingDeviceLocation(){ return surfForecastRepository.isUsingDeviceLocation(); }
+
+    LiveData<ServerStatus> getServerStatus(){ return surfForecastRepository.getServerStatus(); }
 
     LiveData<SurfForecastRepositoryException> repositoryError(){ return surfForecastRepository.repositoryError(); }
 

@@ -11,7 +11,9 @@ import android.widget.Button;
 import android.widget.TextView;
 
 import com.bulan_baru.surf_forecast_data.ClientDevice;
+import com.bulan_baru.surf_forecast_data.ServerStatus;
 import com.bulan_baru.surf_forecast_data.SurfForecastRepository;
+import com.bulan_baru.surf_forecast_data.SurfForecastService;
 import com.bulan_baru.surf_forecast_data.utils.Logger;
 import com.bulan_baru.surf_forecast_data.utils.Utils;
 
@@ -51,7 +53,12 @@ public class AboutDialogFragment extends AppCompatDialogFragment {
         String lf = "\n";
         String blurb = "API Base URL: " + repository.getServiceManager().getApiBaseURL() + lf;
         blurb += "Client device ID: " + device.getDeviceID() + lf;
-        blurb += "Using location from device: " + device.getLocationDeviceID() + lf;
+        blurb += "Using device for location: " + repository.isUsingDeviceLocation() + lf;
+        blurb += "Device Lat/Lon: " + device.getLatitude() + "/" + device.getLongitude() + lf;
+        ServerStatus ss = repository.getLastServerStatus();
+        if(ss != null) {
+            blurb += "Server time: " + Utils.formatDate(ss.serverNow(), SurfForecastService.DATE_FORMAT) + lf;
+        }
 
         //get the content view
         View contentView = inflater.inflate(R.layout.about_dialog, null);

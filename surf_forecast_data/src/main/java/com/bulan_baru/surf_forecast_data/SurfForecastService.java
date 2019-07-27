@@ -16,6 +16,9 @@ public interface SurfForecastService {
     String DATE_ONLY_FORMAT = "yyyy-MM-dd Z";
     String USER_AGENT = "BBSF";
 
+    @GET("about")
+    Call<ServerStatus> getServerStatus();
+
     @GET("locations")
     Call<List<Location>> getLocations(@Query("lat") double latitude, @Query("lon") double longitude, @Query("distance") float maxDistance);
 
