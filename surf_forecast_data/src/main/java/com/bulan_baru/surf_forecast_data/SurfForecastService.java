@@ -29,7 +29,7 @@ public interface SurfForecastService {
     @GET("sources")
     Call<List<Source>> getSources();
 
-    @GET("forecast/{locationID}")
+    @GET("forecast-daylight/{locationID}")
     Call<Forecast> getForecast(@Path("locationID") int locationID);
 
     @PUT("device/{deviceID}")

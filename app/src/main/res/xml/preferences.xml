@@ -12,23 +12,8 @@
     <CheckBoxPreference
         android:key="use_device_location"
         android:title="Enable Device Location"
-        android:summaryOn="Use the device GPS"
-        android:summaryOff="Use a server supplied location"
+        android:summary="Use the device GPS"
         android:defaultValue="true"/>
-    <ListPreference
-        android:entries="@array/settings.location_updates_min_time.values"
-        android:entryValues="@array/settings.location_updates_min_time.values"
-        android:key="location_update_min_time"
-        android:numeric="integer"
-        android:summary="@string/settings.location_updates_min_time.prompt"
-        android:title="Location Updates (seconds)" />
-    <ListPreference
-        android:entries="@array/settings.location_updates_min_dist.values"
-        android:entryValues="@array/settings.location_updates_min_dist.values"
-        android:key="location_update_min_distance"
-        android:numeric="integer"
-        android:summary="@string/settings.location_updates_min_dist.prompt"
-        android:title="Location Updates (meters)" />
     <ListPreference
         android:entries="@array/settings.restart_after.labels"
         android:entryValues="@array/settings.restart_after.values"

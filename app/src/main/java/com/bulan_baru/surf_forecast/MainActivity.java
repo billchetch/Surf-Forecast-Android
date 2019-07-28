@@ -123,6 +123,10 @@ public class MainActivity extends GenericActivity{
     private void showSurfConditions(){ showSurfConditions(View.VISIBLE); }
     private void hideSurfConditions(){ showSurfConditions(View.INVISIBLE); }
 
+    private void setPauseLocationUpdates(boolean pause){
+        pauseLocationUpdates = pause ? Calendar.getInstance() : null;
+        Log.i(LOG_TAG, pause ? "Location updates paused" : "Location updates resumed");
+    }
 
     /*
         Assign the particular view model and call the parent
@@ -142,7 +146,7 @@ public class MainActivity extends GenericActivity{
         }
 
         //check to see if the device has changed significanly (either in time period or in change of location in METERS)
-        if(lastDeviceLocation == null || lastDeviceLocation.distanceTo(device.getLocation()) > 500 || Utils.dateDiff(Calendar.getInstance(), deviceLocationLastUpdated, TimeUnit.SECONDS) > 2*60){
+        if(lastDeviceLocation == null || lastDeviceLocation.distanceTo(device.getLocation()) > 500 || Utils.dateDiff(Calendar.getInstance(), deviceLocationLastUpdated, TimeUnit.SECONDS) > 5*60){
             if(lastDeviceLocation != null)Log.i(LOG_TAG,"Location changed " + lastDeviceLocation.distanceTo(device.getLocation()) + " meters since " + Utils.dateDiff(Calendar.getInstance(), deviceLocationLastUpdated, TimeUnit.SECONDS) + " seconds ago");
             lastDeviceLocation = device.getLocation();
             deviceLocationLastUpdated = Calendar.getInstance();
@@ -158,7 +162,7 @@ public class MainActivity extends GenericActivity{
         }
 
 
-        Log.i(LOG_TAG,"Retrieving locations...");
+        Log.i(LOG_TAG,"Retrieving locations with device at lat/lon: " + device.getLatitude() + "/" + device.getLongitude());
         //here we request locations
         ((MainViewModel)viewModel).getLocationsNearby().observe(this, locations -> {
             //we have a successful return so if there was a service unreachable error earlier that is still showing
@@ -190,7 +194,7 @@ public class MainActivity extends GenericActivity{
                         @Override
                         public void onItemSelected(AdapterView<?> parentView, View selectedItemView, int position, long id) {
                             if(position < locations.size()) {
-                                pauseLocationUpdates = position == 0 ? null : Calendar.getInstance();
+                                setPauseLocationUpdates(position != 0);
                                 getForecastForLocation(locations.get(position));
                             }
                         }
@@ -298,7 +302,7 @@ public class MainActivity extends GenericActivity{
 
                     @Override
                     public void onPageSelected(int i) {
-                        pauseLocationUpdates = Calendar.getInstance();
+                        setPauseLocationUpdates(true);
                         currentConditionsPage = i;
                     }
 

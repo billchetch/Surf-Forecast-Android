@@ -59,8 +59,7 @@ abstract public class LocationService extends Service {
     final public static int ERROR_REPOSITORY = 1;
     final public static int ERROR_INITIALISE = 2;
 
-
-    final public static long DEFAULT_MIN_TIME = 10;
+    final public static long DEFAULT_MIN_TIME = 30;
     final public static long DEFAULT_MIN_DISTANCE = 0;
 
     private LocationManager locationManager;
@@ -189,7 +188,7 @@ abstract public class LocationService extends Service {
     protected void startListeningForLocationUpdates() {
 
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-        currentLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+        currentLocation = null; //locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
 
         //location listener on Repository
         repository.clientDevice().observeForever(clientDevice -> {
@@ -202,9 +201,11 @@ abstract public class LocationService extends Service {
         locationListener = new LocationListener() {  //location listener on device
             public void onLocationChanged(Location location) {
                 //TODO: some logic here to make sure we have the best current location
-                repository.updateDeviceLocation(location);
-                currentLocation = location;
-                Log.i("LS", "location updated by device " + location.getLongitude() + "/" + location.getLatitude());
+                if(location != null) {
+                    repository.updateDeviceLocation(location);
+                    currentLocation = location;
+                    Log.i("LS", "location updated by device " + location.getLongitude() + "/" + location.getLatitude());
+                }
             }
 
             public void onStatusChanged(String provider, int status, Bundle extras) {
@@ -220,9 +221,8 @@ abstract public class LocationService extends Service {
             }
         };
 
-        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-        minTime = preferences.getLong(MIN_TIME, DEFAULT_MIN_TIME);
-        minDistance = preferences.getLong(MIN_DISTANCE, DEFAULT_MIN_DISTANCE);
+        minTime = DEFAULT_MIN_TIME;
+        minDistance = DEFAULT_MIN_DISTANCE;
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, TimeUnit.SECONDS.toMillis(minTime), minDistance, locationListener);
 
         Log.i("LS", "Requested location updates");

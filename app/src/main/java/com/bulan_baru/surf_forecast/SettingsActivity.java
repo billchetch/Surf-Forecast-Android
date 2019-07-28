@@ -59,14 +59,6 @@ public class SettingsActivity extends AppCompatActivity implements SharedPrefere
             restartApplicationOnFinish = true;
         }
 
-        if(key.equals(SFLocationService.MIN_TIME)){
-            restartApplicationOnFinish = true;
-        }
-
-        if(key.equals(SFLocationService.MIN_DISTANCE)){
-            restartApplicationOnFinish = true;
-        }
-
         if(key.equals("use_device_location")){
             boolean useDeviceLocation = sharedPreferences.getBoolean(key, true);
             ((SurfForecastApplication)getApplication()).repositoryComponent.getRepository().setUseDeviceLocation(useDeviceLocation);
