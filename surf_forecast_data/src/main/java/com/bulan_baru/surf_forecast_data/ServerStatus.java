@@ -19,6 +19,11 @@ public class ServerStatus {
     private double latitude;
     private double longitude;
 
+    @SerializedName("first_light")
+    private Calendar firstLight;
+    @SerializedName("last_light")
+    private Calendar lastLight;
+
     private boolean updated = false;
 
     public Location getLocation(){
@@ -38,4 +43,7 @@ public class ServerStatus {
         cal.setTimeZone(tz);
         return cal;
     }
+
+    public Calendar getFirstLight(){ return firstLight; }
+    public Calendar getLastLight(){ return lastLight; }
 }

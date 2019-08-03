@@ -2,6 +2,7 @@ package com.bulan_baru.surf_forecast;
 
 import android.arch.lifecycle.ViewModelProviders;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.DialogFragment;
 import android.support.v4.view.ViewPager;
@@ -18,6 +19,7 @@ import android.widget.TextView;
 import com.bulan_baru.surf_forecast_data.ClientDevice;
 import com.bulan_baru.surf_forecast_data.Forecast;
 import com.bulan_baru.surf_forecast_data.Location;
+import com.bulan_baru.surf_forecast_data.ServerStatus;
 import com.bulan_baru.surf_forecast_data.SurfForecastRepository;
 import com.bulan_baru.surf_forecast_data.SurfForecastService;
 import com.bulan_baru.surf_forecast_data.utils.Logger;
@@ -38,12 +40,14 @@ public class MainActivity extends GenericActivity{
     private Calendar deviceLocationLastUpdated;
     private Location currentLocation;
     private Forecast currentForecast;
+    private Calendar displayedFirstHour;
     private SurfConditionsFragmentAdapter surfConditionsAdapter;
     private Calendar forecastLastDisplayed;
     private int currentConditionsPage = -1;
     private Calendar pauseLocationUpdates;
     private boolean noForecastForLocationError = false;
     private int lastShownErrorCode;
+    private int lastBrightness;
 
     private LocationDialogFragment locationDialog;
     private Calendar locationInfoLastShown;
@@ -53,6 +57,7 @@ public class MainActivity extends GenericActivity{
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(null);
         setContentView(R.layout.activity_main);
+
 
         Toolbar toolbar = findViewById(R.id.main_toolbar);
         setSupportActionBar(toolbar);
@@ -140,6 +145,28 @@ public class MainActivity extends GenericActivity{
 
     @Override
     protected void onDeviceUpdated(ClientDevice device){
+        //control brightness if we are user server locations
+        //TODO: make this settable
+        if(!viewModel.isUsingDeviceLocation()) {
+            ServerStatus ss = viewModel.getLastServerStatus();
+            if (ss != null) {
+                Calendar now = Calendar.getInstance();
+                int brightness = 0;
+                if (Utils.dateDiff(now, ss.getFirstLight(), TimeUnit.HOURS) < 0 || Utils.dateDiff(now, ss.getLastLight(), TimeUnit.HOURS) > 0) {
+                    //dark so lower brightness
+                    brightness = 64;
+                } else {
+                    //light so raise brightness
+                    brightness = 255;
+                }
+
+                if (lastBrightness != brightness) {
+                    Settings.System.putInt(getApplicationContext().getContentResolver(), Settings.System.SCREEN_BRIGHTNESS, brightness);
+                    lastBrightness = brightness;
+                }
+            }
+        }
+
         //Remove location info in case it was opened by user and they forgot to close
         if(locationInfoLastShown != null && Utils.dateDiff(Calendar.getInstance(), locationInfoLastShown, TimeUnit.SECONDS) > 30){
             closeLocationInfo();
@@ -150,7 +177,7 @@ public class MainActivity extends GenericActivity{
             if(lastDeviceLocation != null)Log.i(LOG_TAG,"Location changed " + lastDeviceLocation.distanceTo(device.getLocation()) + " meters since " + Utils.dateDiff(Calendar.getInstance(), deviceLocationLastUpdated, TimeUnit.SECONDS) + " seconds ago");
             lastDeviceLocation = device.getLocation();
             deviceLocationLastUpdated = Calendar.getInstance();
-        } else if(pauseLocationUpdates == null) { //if not null then we have selected to view
+        } else if(pauseLocationUpdates == null) {
             Log.i(LOG_TAG,"Location not significantly updated ... distance traveled " + lastDeviceLocation.distanceTo(device.getLocation()) + " meters since " + Utils.dateDiff(Calendar.getInstance(), deviceLocationLastUpdated, TimeUnit.SECONDS) + " seconds ago");
             return;
         }
@@ -211,10 +238,16 @@ public class MainActivity extends GenericActivity{
 
     protected void getForecastForLocation(Location location){
 
+        boolean locationHasChanged = (currentForecast != null && currentForecast.getLocationID() != location.getID());
+
         //if the current forecast is for the same location then don't immediately go and get a new forecast
         //instead wait X minutes before doing so
-        if(currentForecast != null && currentLocation != null && currentConditionsPage == 0 && currentForecast.getLocationID() == location.getID() && Utils.dateDiff(Calendar.getInstance(), forecastLastDisplayed, TimeUnit.MINUTES) < 20){
-            return;
+        if(!locationHasChanged && currentConditionsPage == 0){
+            boolean firstHourIsAhead = displayedFirstHour != null && currentForecast.now().getTimeInMillis() <  displayedFirstHour.getTimeInMillis();
+            int forecastStaleAfter = firstHourIsAhead ? 20 : 5;
+            if(Utils.dateDiff(Calendar.getInstance(), forecastLastDisplayed, TimeUnit.MINUTES) < forecastStaleAfter){
+                return;
+            }
         }
 
         //if there is a request to get the forecast for the same location that produced a noForecastForLocation error then return instead
@@ -228,27 +261,17 @@ public class MainActivity extends GenericActivity{
         showProgress();
         ((MainViewModel)viewModel).getForecast(currentLocation.getID()).observe(this, forecast -> {
 
+            //if we are here then either the location has changed OR a certain period has elapsed
             setCurrentForecast(forecast);
 
         });
     }
 
     protected void setCurrentForecast(Forecast forecast){
-        //check if the request to set the current forecast doesn't require changing the data displayed
-        //this differs from the wait in getForecastForLocation because it tests whether the feed run is the same
-        //if it is the same then the data will be the same and there's no need for updating display
-        boolean locationHasChanged = (currentForecast != null && currentForecast.getLocationID() != forecast.getLocationID());
-        boolean forecastHasChanged = (currentForecast == null || currentForecast.getFeedRunID() != forecast.getFeedRunID() || locationHasChanged);
-        Calendar now = Calendar.getInstance();
-        if(!forecastHasChanged && Utils.dateDiff(now, forecastLastDisplayed, TimeUnit.MINUTES) < 25 && currentConditionsPage == 0){
-            showSurfConditions();
-            hideProgress();
-            return;
-        }
-
-
         //if here the forecast being set is different from the one that is already set ... or it's the first forecast being set
         //... or a certain time has elapsed
+        Calendar now = Calendar.getInstance();
+
         String s = "Updated ";
         TimeZone tz = TimeZone.getTimeZone("UTC");
         Calendar cal = Calendar.getInstance(tz);
@@ -325,6 +348,7 @@ public class MainActivity extends GenericActivity{
 
         currentForecast = forecast;
         forecastLastDisplayed = now;
+        displayedFirstHour = surfConditionsAdapter.getFirstHour();
 
         Logger.info("Forecast displayed for location ID " + forecast.getLocationID());
     }

@@ -33,6 +33,8 @@ public class GenericViewModel extends ViewModel {
 
     LiveData<ServerStatus> getServerStatus(){ return surfForecastRepository.getServerStatus(); }
 
+    ServerStatus getLastServerStatus(){ return surfForecastRepository.getLastServerStatus(); }
+
     LiveData<SurfForecastRepositoryException> repositoryError(){ return surfForecastRepository.repositoryError(); }
 
     LiveData<Digest> postDigest(Digest digest){ return surfForecastRepository.postDigest(digest); }

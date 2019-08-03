@@ -85,6 +85,14 @@ public class SurfConditionsFragmentAdapter extends FragmentPagerAdapter {
     }
 
 
+    public Calendar getFirstHour(){
+        if(hourSpreads != null && hourSpreads.size() > 0){
+            return hourSpreads.get(0).get(0).date;
+        } else {
+            return null;
+        }
+    }
+
     // This determines the fragment for each tab
     @Override
     public Fragment getItem(int position) {
