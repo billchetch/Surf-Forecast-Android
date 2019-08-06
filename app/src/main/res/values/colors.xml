@@ -12,4 +12,10 @@
     <color name="dialogBg">#CC333333</color>
     <color name="vdarkGrey">#222222</color>
     <color name="bluegreen">#7cdad2</color>
+    <color name="age0">#318472</color>
+    <color name="age1">#638b53</color>
+    <color name="age2">#959b3e</color>
+    <color name="age3">#9e5307</color>
+    <color name="age4">#ce4e04</color>
+    <color name="age5">#e40101</color>
 </resources>

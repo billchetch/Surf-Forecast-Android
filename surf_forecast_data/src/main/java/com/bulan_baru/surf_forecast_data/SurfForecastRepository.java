@@ -169,6 +169,27 @@ public class SurfForecastRepository{
         return serverStatusLiveData;
     }
 
+    public LiveData<LocationInfo> getLocationInfo(Calendar date, android.location.Location location){
+        final MutableLiveData<LocationInfo> locationInfoLiveData = new MutableLiveData<>();
+
+        SurfForecastService service = getService();
+        if(service != null) {
+            String dateString = Utils.formatDate(date, SurfForecastService.DATE_FORMAT);
+            service.getLocationInfo(dateString, location.getLatitude(), location.getLongitude()).enqueue(
+                    new SurfForecastServiceCallback<LocationInfo>(liveDataServiceError) {
+                        @Override
+                        public void handleResponse(Call<LocationInfo> call, Response<LocationInfo> response) {
+                            locationInfoLiveData.setValue(response.body());
+                        }
+                    }
+            );
+        }
+
+        return locationInfoLiveData;
+    }
+
+
+
     public LiveData<ClientDevice> updateDeviceLocation(android.location.Location location){
         if(device != null) {
             if(location != null) {
@@ -211,8 +232,7 @@ public class SurfForecastRepository{
                     new SurfForecastServiceCallback<Forecast>(liveDataServiceError) {
                         @Override
                         public void handleResponse(Call<Forecast> call, Response<Forecast> response) {
-                            Forecast f = (Forecast)response.body();
-                            forecast.setValue(f);
+                            forecast.setValue(response.body());
                         }
 
                         @Override

@@ -5,8 +5,11 @@ import android.arch.lifecycle.LiveData;
 import android.arch.lifecycle.ViewModel;
 import android.location.Location;
 
+import java.util.Calendar;
+
 import com.bulan_baru.surf_forecast_data.ClientDevice;
 import com.bulan_baru.surf_forecast_data.Digest;
+import com.bulan_baru.surf_forecast_data.LocationInfo;
 import com.bulan_baru.surf_forecast_data.ServerStatus;
 import com.bulan_baru.surf_forecast_data.SurfForecastRepository;
 import com.bulan_baru.surf_forecast_data.SurfForecastRepositoryException;
@@ -34,6 +37,8 @@ public class GenericViewModel extends ViewModel {
     LiveData<ServerStatus> getServerStatus(){ return surfForecastRepository.getServerStatus(); }
 
     ServerStatus getLastServerStatus(){ return surfForecastRepository.getLastServerStatus(); }
+
+    LiveData<LocationInfo> getLocationInfo(Calendar date, Location location){ return surfForecastRepository.getLocationInfo(date, location); }
 
     LiveData<SurfForecastRepositoryException> repositoryError(){ return surfForecastRepository.repositoryError(); }
 

@@ -14,11 +14,13 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Spinner;
 import android.widget.TextView;
+import android.provider.Settings.SettingNotFoundException;
 
 
 import com.bulan_baru.surf_forecast_data.ClientDevice;
 import com.bulan_baru.surf_forecast_data.Forecast;
 import com.bulan_baru.surf_forecast_data.Location;
+import com.bulan_baru.surf_forecast_data.LocationInfo;
 import com.bulan_baru.surf_forecast_data.ServerStatus;
 import com.bulan_baru.surf_forecast_data.SurfForecastRepository;
 import com.bulan_baru.surf_forecast_data.SurfForecastService;
@@ -47,7 +49,7 @@ public class MainActivity extends GenericActivity{
     private Calendar pauseLocationUpdates;
     private boolean noForecastForLocationError = false;
     private int lastShownErrorCode;
-    private int lastBrightness;
+
 
     private LocationDialogFragment locationDialog;
     private Calendar locationInfoLastShown;
@@ -144,27 +146,27 @@ public class MainActivity extends GenericActivity{
 
 
     @Override
-    protected void onDeviceUpdated(ClientDevice device){
-        //control brightness if we are user server locations
-        //TODO: make this settable
-        if(!viewModel.isUsingDeviceLocation()) {
-            ServerStatus ss = viewModel.getLastServerStatus();
-            if (ss != null) {
-                Calendar now = Calendar.getInstance();
-                int brightness = 0;
-                if (Utils.dateDiff(now, ss.getFirstLight(), TimeUnit.HOURS) < 0 || Utils.dateDiff(now, ss.getLastLight(), TimeUnit.HOURS) > 0) {
-                    //dark so lower brightness
-                    brightness = 64;
-                } else {
-                    //light so raise brightness
-                    brightness = 255;
-                }
+    protected void onLocationInfo(ClientDevice device, LocationInfo locationInfo){
 
-                if (lastBrightness != brightness) {
-                    Settings.System.putInt(getApplicationContext().getContentResolver(), Settings.System.SCREEN_BRIGHTNESS, brightness);
-                    lastBrightness = brightness;
-                }
+        //TODO: make this a setting
+        //control brightness if we are user server locations
+        Calendar now = Calendar.getInstance();
+        int brightness = 0;
+        if (Utils.dateDiff(now, locationInfo.getFirstLight(), TimeUnit.HOURS) < 0 || Utils.dateDiff(now, locationInfo.getLastLight(), TimeUnit.HOURS) > 0) {
+            //dark so lower brightness
+            brightness = 16;
+        } else {
+            //light so raise brightness
+            brightness = 255;
+        }
+
+        try {
+            int systemBrightness = Settings.System.getInt(getApplicationContext().getContentResolver(), Settings.System.SCREEN_BRIGHTNESS);
+            if (systemBrightness != brightness) {
+                Settings.System.putInt(getApplicationContext().getContentResolver(), Settings.System.SCREEN_BRIGHTNESS, brightness);
             }
+        } catch (SettingNotFoundException ex){
+            //just don't set the brightness (cos not that important)
         }
 
         //Remove location info in case it was opened by user and they forgot to close
@@ -272,25 +274,26 @@ public class MainActivity extends GenericActivity{
         //... or a certain time has elapsed
         Calendar now = Calendar.getInstance();
 
-        String s = "Updated ";
+        String s = "Forecast updated ";
         TimeZone tz = TimeZone.getTimeZone("UTC");
         Calendar cal = Calendar.getInstance(tz);
         long hoursDiff = Utils.dateDiff(cal, Utils.date2cal(forecast.getCreated()), TimeUnit.HOURS);
-        int ageOfForecast = 0; //scale of 0 to 4
+        int ageOfForecast = 0; //scale of 0 to 5
         if(hoursDiff <= 0){
             s+= "just now";
         } else if (hoursDiff < 24) {
             s+= Utils.round2string(hoursDiff, 0);
             s+= hoursDiff == 1 ? " hour" : " hours";
             s+= " ago";
-            ageOfForecast = 1;
+            ageOfForecast = hoursDiff <= 6 ? 1 : (hoursDiff < 12 ? 2 : 3);
         } else if(hoursDiff >= 24){
             double days = Math.floor(hoursDiff/24);
-            ageOfForecast = Math.max((int)days, 4);
+            ageOfForecast = Math.max((int)days + 3, 5);
             hoursDiff = hoursDiff - (long)days*24;
             s += Utils.round2string(days, 0) + (days > 1 ? " days" : " day");
             s += (hoursDiff > 0 ? " and " + hoursDiff + " hours" : "") + " ago";
         }
+
 
         boolean expired = Utils.dateDiff(cal, forecast.getForecastTo()) > 0;
         if(expired){
@@ -306,6 +309,9 @@ public class MainActivity extends GenericActivity{
         //set text and colour (using ageOfForecast)
         TextView forecastInfo = findViewById(R.id.forecastInfo);
         forecastInfo.setText(s);
+        int colourID = getResources().getIdentifier("age" + ageOfForecast, "color", getPackageName());
+        int colour = getResources().getColor(colourID);
+        forecastInfo.setTextColor(colour);
 
 
         hideProgress();

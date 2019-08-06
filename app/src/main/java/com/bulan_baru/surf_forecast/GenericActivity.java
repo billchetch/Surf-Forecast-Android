@@ -14,6 +14,7 @@ import android.location.Location;
 import android.os.Bundle;
 import android.os.Handler;
 import java.lang.Thread.UncaughtExceptionHandler;
+import java.util.Calendar;
 
 import android.preference.PreferenceManager;
 import android.support.v4.app.ActivityCompat;
@@ -27,6 +28,7 @@ import android.view.View;
 import android.widget.ProgressBar;
 
 import com.bulan_baru.surf_forecast_data.ClientDevice;
+import com.bulan_baru.surf_forecast_data.LocationInfo;
 import com.bulan_baru.surf_forecast_data.SurfForecastRepository;
 import com.bulan_baru.surf_forecast_data.SurfForecastRepositoryException;
 import com.bulan_baru.surf_forecast_data.services.LocationService;
@@ -141,10 +143,18 @@ public class GenericActivity extends AppCompatActivity{
                 startTimer(30);
             }
 
-            //this will fire every time the client device is updated and has a location
+            //this will fire at regular intervals as a result of setting the devices location info
             viewModel.getSurfForecastRepository().clientDevice().observe(this, clientDevice -> {
                 if(clientDevice != null && clientDevice.hasLocation()){
-                    onDeviceUpdated(clientDevice);
+                    if(clientDevice != null && clientDevice.hasLocation()){
+                        Calendar now = Calendar.getInstance();
+                        viewModel.getLocationInfo(now, clientDevice.getLocation()).observe(this, locationInfo -> {
+                            Log.i("GA", locationInfo.toString());
+                            onLocationInfo(clientDevice, locationInfo);
+                        });
+                    }
+
+
                 }
             });
         }
@@ -165,7 +175,7 @@ public class GenericActivity extends AppCompatActivity{
         stopService(intent);
     }
 
-    protected void onDeviceUpdated(ClientDevice device){
+    protected void onLocationInfo(ClientDevice clientDevice, LocationInfo locationInfo){
         //stub method
     }
 

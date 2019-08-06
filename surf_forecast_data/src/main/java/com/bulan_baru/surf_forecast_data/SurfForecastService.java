@@ -1,6 +1,7 @@
 package com.bulan_baru.surf_forecast_data;
 
 import java.util.List;
+import java.util.Calendar;
 
 import retrofit2.Call;
 import retrofit2.http.Body;
@@ -18,6 +19,9 @@ public interface SurfForecastService {
 
     @GET("about")
     Call<ServerStatus> getServerStatus();
+
+    @GET("location-info")
+    Call<LocationInfo> getLocationInfo(@Query("date") String dateString, @Query("lat") double latitude, @Query("lon") double longitude);
 
     @GET("locations")
     Call<List<Location>> getLocations(@Query("lat") double latitude, @Query("lon") double longitude, @Query("distance") float maxDistance);
