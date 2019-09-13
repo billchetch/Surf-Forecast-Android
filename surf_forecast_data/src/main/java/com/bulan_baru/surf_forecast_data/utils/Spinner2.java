@@ -79,4 +79,13 @@ public class Spinner2 extends Spinner {
             performClosedEvent();
         }
     }
+
+    /**
+     * Use this to directly close the spinner
+     */
+
+    public void close(){
+        //performClosedEvent();
+        onDetachedFromWindow();
+    }
 }

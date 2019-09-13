@@ -49,10 +49,7 @@ public class MainActivity extends GenericActivity{
     private Calendar pauseLocationUpdates;
     private boolean noForecastForLocationError = false;
     private int lastShownErrorCode;
-
-
     private LocationDialogFragment locationDialog;
-    private Calendar locationInfoLastShown;
 
 
     @Override
@@ -169,10 +166,15 @@ public class MainActivity extends GenericActivity{
             //just don't set the brightness (cos not that important)
         }
 
-        //Remove location info in case it was opened by user and they forgot to close
-        if(locationInfoLastShown != null && Utils.dateDiff(Calendar.getInstance(), locationInfoLastShown, TimeUnit.SECONDS) > 30){
-            closeLocationInfo();
+        //check for a pause in requesting location list updates
+        if(pauseLocationUpdates != null && Utils.dateDiff(Calendar.getInstance(), pauseLocationUpdates, TimeUnit.SECONDS) < 30){
+            Log.i(LOG_TAG,"Location updates paused");
+            return;
         }
+
+        //enough time has elapsed without user interaction so we can close various things
+        closeLocationInfo();
+        ((Spinner2)findViewById(R.id.surfLocation)).close();
 
         //check to see if the device has changed significanly (either in time period or in change of location in METERS)
         if(lastDeviceLocation == null || lastDeviceLocation.distanceTo(device.getLocation()) > 500 || Utils.dateDiff(Calendar.getInstance(), deviceLocationLastUpdated, TimeUnit.SECONDS) > 5*60){
@@ -183,13 +185,6 @@ public class MainActivity extends GenericActivity{
             Log.i(LOG_TAG,"Location not significantly updated ... distance traveled " + lastDeviceLocation.distanceTo(device.getLocation()) + " meters since " + Utils.dateDiff(Calendar.getInstance(), deviceLocationLastUpdated, TimeUnit.SECONDS) + " seconds ago");
             return;
         }
-
-        //check for a pause in requesting location list updates
-        if(pauseLocationUpdates != null && Utils.dateDiff(Calendar.getInstance(), pauseLocationUpdates, TimeUnit.SECONDS) < 30){
-            Log.i(LOG_TAG,"Location updates paused");
-            return;
-        }
-
 
         Log.i(LOG_TAG,"Retrieving locations with device at lat/lon: " + device.getLatitude() + "/" + device.getLongitude());
         //here we request locations
@@ -288,7 +283,7 @@ public class MainActivity extends GenericActivity{
             ageOfForecast = hoursDiff <= 6 ? 1 : (hoursDiff < 12 ? 2 : 3);
         } else if(hoursDiff >= 24){
             double days = Math.floor(hoursDiff/24);
-            ageOfForecast = Math.max((int)days + 3, 5);
+            ageOfForecast = Math.min((int)days + 3, 5);
             hoursDiff = hoursDiff - (long)days*24;
             s += Utils.round2string(days, 0) + (days > 1 ? " days" : " day");
             s += (hoursDiff > 0 ? " and " + hoursDiff + " hours" : "") + " ago";
@@ -363,11 +358,11 @@ public class MainActivity extends GenericActivity{
         Log.i(LOG_TAG, "Open location info");
         locationDialog = new LocationDialogFragment(location);
         locationDialog.show(getSupportFragmentManager(), "LocationDialog");
-        locationInfoLastShown = Calendar.getInstance();
+        setPauseLocationUpdates(true);
     }
 
     public void closeLocationInfo(){
         if(locationDialog != null)locationDialog.dismiss();
-        locationInfoLastShown = null;
+        locationDialog = null;
     }
 }

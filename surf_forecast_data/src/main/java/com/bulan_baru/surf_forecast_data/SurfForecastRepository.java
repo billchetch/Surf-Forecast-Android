@@ -150,6 +150,7 @@ public class SurfForecastRepository{
     public LiveData<ServerStatus> getServerStatus(){
         final MutableLiveData<ServerStatus> serverStatusLiveData = new MutableLiveData<>();
 
+        Log.i("SDF", "Getting server status");
         SurfForecastService service = getService();
         if(service != null) {
             service.getServerStatus().enqueue(

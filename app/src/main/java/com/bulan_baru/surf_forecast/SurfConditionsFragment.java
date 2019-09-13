@@ -81,7 +81,7 @@ public class SurfConditionsFragment extends Fragment {
             View sc = inflater.inflate(R.layout.surf_conditions, surfConditionsLayout, false);
 
             try {
-
+                //title
                 String title = Utils.formatDate(fh.date, "HH:mm");
                 float alpha = 1.0f;
                 if(startsToday && Utils.isTomorrow(fh.date, forecast.now())){
@@ -89,6 +89,7 @@ public class SurfConditionsFragment extends Fragment {
                     alpha = 0.6f;
                 }
 
+                //rating
                 Integer rating = 0;
                 if (fh.getRating() != null) {
                     rating = (int) Math.round(Double.parseDouble(fh.getRating()));
@@ -99,15 +100,28 @@ public class SurfConditionsFragment extends Fragment {
                     iv.setAlpha(alpha);
                 }
 
+                //swell height and period
                 String sh = Utils.convert(fh.getSwellHeight(), Utils.Conversions.METERS_2_FEET, 0) + " ft";
                 String sp = Utils.round2string(Double.parseDouble(fh.getSwellPeriod()), 0) + " secs";
-                float swellDirection = Float.parseFloat(fh.getSwellDirection());
-                ImageView iv = sc.findViewById(R.id.swellDirectionIcon);
-                iv.setRotation(swellDirection);
-                iv.setAlpha(alpha);
-                int deg = (int) ((swellDirection + 180) % 360);
-                String sd = Utils.convert(deg, Utils.Conversions.DEG_2_COMPASS) + " (" + deg + " deg)";
 
+                //swell direction
+                String swd = fh.getSwellDirection();
+                ImageView iv = sc.findViewById(R.id.swellDirectionIcon);
+                String sd;
+                int deg;
+                if(swd == null){
+                    sd = "";
+                    iv.setVisibility(View.INVISIBLE);
+                } else {
+                    float swellDirection = Float.parseFloat(swd);
+                    iv.setVisibility(View.VISIBLE);
+                    iv.setRotation(swellDirection);
+                    iv.setAlpha(alpha);
+                    deg = (int) ((swellDirection + 180) % 360);
+                    sd = Utils.convert(deg, Utils.Conversions.DEG_2_COMPASS) + " (" + deg + " deg)";
+                }
+
+                //wind direction
                 float windDirection = Float.parseFloat(fh.getWindDirection());
                 iv = sc.findViewById(R.id.windDirectionIcon);
                 iv.setRotation(windDirection);
@@ -116,6 +130,7 @@ public class SurfConditionsFragment extends Fragment {
                 deg = (int) ((windDirection + 180) % 360);
                 String wd = Utils.convert(deg, Utils.Conversions.DEG_2_COMPASS) + " (" + deg + " deg)";
 
+                //tide data
                 String th = Utils.convert(Double.parseDouble(fh.getTideHeight()), Utils.Conversions.METERS_2_FEET, 0) + " ft";
                 String ts = fh.getTidePosition() != null ? tidePositions[fh.getTidePosition()] : "";
                 iv = sc.findViewById(R.id.tideDirection);

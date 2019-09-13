@@ -214,6 +214,14 @@ public class Forecast extends DataObject {
         return filteredHours;
     }
 
+    public List<ForecastHour> getHours(Calendar cal){
+        cal = Utils.calendarZeroTime(cal);
+        Calendar cal1 = Utils.calendarSetHour(cal, 0);
+        Calendar cal2 = Utils.calendarSetHour(cal, 23);
+
+        return getHours(cal1, cal2);
+    }
+
     public List<ForecastHour> getHours(Date from, Date to){
         return getHours(Utils.date2cal(from), Utils.date2cal(to));
     }
@@ -288,4 +296,18 @@ public class Forecast extends DataObject {
     }
 
 
+    public List<Calendar> getValidDates(Calendar from, Calendar to){
+        List<Calendar> validDates = new ArrayList<>();
+        List<Calendar> dates = Utils.getDates(from, to);
+        for(int i = 0; i < dates.size(); i++){
+            ForecastDay fd = getDay(dates.get(i));
+            if(fd == null)break;
+
+            List<ForecastHour> fhs = getHours(dates.get(i));
+            if(fhs.size() == 0)break;
+
+            validDates.add(i, dates.get(i));
+        }
+        return validDates;
+    }
 }
