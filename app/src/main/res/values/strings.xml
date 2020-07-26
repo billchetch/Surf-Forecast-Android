@@ -1,5 +1,6 @@
 <resources>
     <string name="app_name">BB Forecast</string>
+    <string name="display_type">HAND_PHONE</string>
     <string name="settings.location_updates_min_time.prompt">Select interval between location updates</string>
     <string name="settings.location_updates_min_time.devault_value">20</string>
     <string-array name="settings.location_updates_min_time.values" translatable="false">

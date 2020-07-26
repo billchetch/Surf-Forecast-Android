@@ -1,272 +1,335 @@
 package com.bulan_baru.surf_forecast;
 
+import android.Manifest;
+import android.app.Activity;
+import android.arch.lifecycle.Observer;
 import android.arch.lifecycle.ViewModelProviders;
+import android.content.Context;
+import android.content.Intent;
+import android.content.pm.ActivityInfo;
+import android.content.pm.PackageManager;
+import android.location.LocationListener;
+import android.location.LocationManager;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.support.design.widget.TabLayout;
-import android.support.v4.app.DialogFragment;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.view.ViewPager;
-import android.support.v7.widget.Toolbar;
 import android.util.Log;
-import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.Spinner;
 import android.widget.TextView;
 import android.provider.Settings.SettingNotFoundException;
 
 
-import com.bulan_baru.surf_forecast_data.ClientDevice;
-import com.bulan_baru.surf_forecast_data.Forecast;
-import com.bulan_baru.surf_forecast_data.Location;
-import com.bulan_baru.surf_forecast_data.LocationInfo;
-import com.bulan_baru.surf_forecast_data.ServerStatus;
-import com.bulan_baru.surf_forecast_data.SurfForecastRepository;
-import com.bulan_baru.surf_forecast_data.SurfForecastService;
-import com.bulan_baru.surf_forecast_data.utils.Logger;
-import com.bulan_baru.surf_forecast_data.utils.Spinner2;
-import com.bulan_baru.surf_forecast_data.utils.TypeConverter;
-import com.bulan_baru.surf_forecast_data.utils.UncaughtExceptionHandler;
-import com.bulan_baru.surf_forecast_data.utils.Utils;
+import com.bulan_baru.surf_forecast.models.MainViewModel;
+import com.bulan_baru.surf_forecast.data.Forecast;
+import com.bulan_baru.surf_forecast.data.Location;
+import com.bulan_baru.surf_forecast.services.SFLocationService;
 
+import net.chetch.appframework.ErrorDialogFragment;
+import net.chetch.appframework.GenericDialogFragment;
+import net.chetch.appframework.IDialogManager;
+import net.chetch.utilities.Logger;
+import net.chetch.utilities.Spinner2;
+import net.chetch.utilities.Utils;
+import net.chetch.webservices.WebserviceViewModel;
+import net.chetch.webservices.exceptions.WebserviceException;
+import net.chetch.webservices.gps.GPSPosition;
+
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
-public class MainActivity extends GenericActivity{
+public class MainActivity extends net.chetch.appframework.GenericActivity  implements IDialogManager {
     private static final String LOG_TAG = "Main";
+    private static final int REQUEST_LOCATION_PERMISSION = 1;
+    private static final int REQUEST_WRITE_PERMISSION = 2;
 
-    private android.location.Location lastDeviceLocation;
-    private Calendar deviceLocationLastUpdated;
-    private Location currentLocation;
-    private Forecast currentForecast;
-    private Calendar displayedFirstHour;
+    MainViewModel viewModel;
+    Observer dataLoadProgress  = obj -> {
+        WebserviceViewModel.LoadProgress progress = (WebserviceViewModel.LoadProgress)obj;
+        String state = progress.startedLoading ? "Loading" : "Loaded";
+        String progressInfo = state + " " + progress.info.toLowerCase();
+        setProgressInfo(progressInfo);
+
+        Log.i("Main", "load observer " + state + " " + progress.info);
+    };
+
+    private LocationDialogFragment locationDialog;
+    private LocationListener locationListener;
+    private android.location.Location currentDeviceLocation;
+    private GPSPosition lastGPSPosition = null;
+    private Calendar lastGPSPositionUpdated = null;
+    private Forecast currentForecast = null;
     private SurfConditionsFragmentAdapter surfConditionsAdapter;
     private Calendar forecastLastDisplayed;
-    private int currentConditionsPage = -1;
+    private Calendar forecastLastRetrieved;
     private Calendar pauseLocationUpdates;
-    private boolean noForecastForLocationError = false;
-    private int lastShownErrorCode;
-    private LocationDialogFragment locationDialog;
+    private int currentConditionsPage = -1;
 
+    public enum DisplayType{
+        HAND_PHONE,
+        TABLET
+    }
+
+    static public DisplayType DISPLAY_TYPE;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(null);
+        super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        //do permissions first cos these require a restart
+        if(MainViewModel.USE_DEVICE_LOCATION && !permissionGranted(Manifest.permission.ACCESS_FINE_LOCATION)){
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_LOCATION_PERMISSION);
+            return;
+        }
 
-        Toolbar toolbar = findViewById(R.id.main_toolbar);
-        setSupportActionBar(toolbar);
+        if(MainViewModel.AUTO_BRIGHTNESS){
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                if (!Settings.System.canWrite(getApplicationContext())) {
+                    Intent intent = new Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS);
+                    intent.setData(Uri.parse("package:" + getPackageName()));
+                    startActivityForResult(intent, REQUEST_WRITE_PERMISSION);
+                    return;
+                }
+            } else if(!permissionGranted(Manifest.permission.WRITE_SETTINGS)) {
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_SETTINGS}, REQUEST_WRITE_PERMISSION);
+                return;
+            }
+        }
+
+        DISPLAY_TYPE =  DisplayType.valueOf(getString(R.string.display_type));
+
+        Log.i(LOG_TAG, "Creating main activity or device " + DISPLAY_TYPE);
+
+        //set up some generic stuff
+        includeActionBar(SettingsActivity.class);
 
         surfConditionsAdapter = new SurfConditionsFragmentAdapter(this, getSupportFragmentManager());
+
+        if(DISPLAY_TYPE == DisplayType.TABLET) {
+            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+        } else {
+            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+        }
 
         hideSurfConditions();
         hideProgress();
 
-        View locationInfo = findViewById(R.id.locationInfo);
-        locationInfo.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Log.i(LOG_TAG, "Clicked info baby ... location " + currentLocation.getID());
-                if(currentLocation != null)openLocationInfo(currentLocation);
-            }
-        });
-    }
+        View locationInfoBtn = findViewById(R.id.locationInfo);
+        locationInfoBtn.setOnClickListener(view -> {
+                if(currentForecast == null)return;
+                Location loc = viewModel.getLocation(currentForecast.getLocationID());
+                if(loc != null){
+                    openLocationInfo(loc);
+                }
+            });
 
 
-    @Override
-    protected void onSaveInstanceState(Bundle outState) {
-        super.onSaveInstanceState(outState);
-
-        hideSurfConditions();
-    }
-
-
-    @Override
-    public void onRestart(){
-        super.onRestart();
-
-        showSurfConditions();
-    }
-
-    @Override
-    public void showError(int errorCode, String errorMessage){
-        Log.e("GAERROR", errorMessage);
-        if(errorCode == SurfForecastRepository.ERROR_FORECAST_FOR_LOCATION_NOT_AVAILABLE){
-            noForecastForLocationError = true;
-        }
-
-
-        //suppress service unreachable errors if they occur when just refreshing data and are less than an hour old
-        if(errorCode == SurfForecastRepository.ERROR_SERVICE_UNREACHABLE){
-            boolean isSameLocation = (currentForecast != null && currentLocation != null && currentForecast.getLocationID() == currentLocation.getID());
-            if(isSameLocation && forecastLastDisplayed != null && Utils.dateDiff(Calendar.getInstance(), forecastLastDisplayed, TimeUnit.MINUTES) < 60){
-                Logger.error("Suppressed error: " + errorMessage);
-                return;
-            } else if(isSameLocation && forecastLastDisplayed != null){
-                errorMessage += "Forecast last displayed " + Utils.formatDate(forecastLastDisplayed, SurfForecastService.DATE_FORMAT);
-            }
-        }
-
-        lastShownErrorCode = errorCode;
-        Logger.error("Shown error: " + errorMessage);
-        super.showError(errorCode, errorMessage);
-    }
-
-    private void showSurfConditions(int visibility){
-        ViewPager viewPager = findViewById(R.id.viewPager);
-        viewPager.setVisibility(visibility);
-
-        TabLayout tabLayout = findViewById(R.id.tabLayout);
-        tabLayout.setVisibility(visibility);
-    }
-
-    private void showSurfConditions(){ showSurfConditions(View.VISIBLE); }
-    private void hideSurfConditions(){ showSurfConditions(View.INVISIBLE); }
-
-    private void setPauseLocationUpdates(boolean pause){
-        pauseLocationUpdates = pause ? Calendar.getInstance() : null;
-        Log.i(LOG_TAG, pause ? "Location updates paused" : "Location updates resumed");
-    }
-
-    /*
-        Assign the particular view model and call the parent
-     */
-    @Override
-    protected void initViewModel(Bundle savedInstanceState){
+        //get the model, load data and add data observers
         viewModel = ViewModelProviders.of(this).get(MainViewModel.class);
-        super.initViewModel(savedInstanceState);
-    }
+
+        //observe errors
+        viewModel.getError().observe(this, t ->{
+            showError(t);
+            Log.e("Main", "Error: " + t.getMessage());
+        });
 
 
-    @Override
-    protected void onLocationInfo(ClientDevice device, LocationInfo locationInfo){
+        //observe location info data updates
+        viewModel.getPositionInfo().observe(this, positionInfo-> {
+            if(MainViewModel.AUTO_BRIGHTNESS){
+                //control brightness if we are user server locations
+                Calendar now = Calendar.getInstance();
+                int brightness = 0;
+                if (Utils.dateDiff(now, positionInfo.getFirstLight(), TimeUnit.HOURS) < 0 || Utils.dateDiff(now, positionInfo.getLastLight(), TimeUnit.HOURS) > 0) {
+                    //dark so lower brightness
+                    brightness = 16;
+                } else {
+                    //light so raise brightness
+                    brightness = 255;
+                }
 
-        //TODO: make this a setting
-        //control brightness if we are user server locations
-        Calendar now = Calendar.getInstance();
-        int brightness = 0;
-        if (Utils.dateDiff(now, locationInfo.getFirstLight(), TimeUnit.HOURS) < 0 || Utils.dateDiff(now, locationInfo.getLastLight(), TimeUnit.HOURS) > 0) {
-            //dark so lower brightness
-            brightness = 16;
-        } else {
-            //light so raise brightness
-            brightness = 255;
-        }
+                try {
+                    int systemBrightness = Settings.System.getInt(getApplicationContext().getContentResolver(), Settings.System.SCREEN_BRIGHTNESS);
+                    if (systemBrightness != brightness) {
+                        Settings.System.putInt(getApplicationContext().getContentResolver(), Settings.System.SCREEN_BRIGHTNESS, brightness);
+                    }
+                } catch (SettingNotFoundException ex) {
+                    //just don't set the brightness (cos not that important)
+                    Log.e(LOG_TAG, ex.getMessage());
+                } catch (Exception ex) {
+                    Log.e(LOG_TAG, ex.getMessage());
+                }
+            } //end auto brigthness
 
-        try {
-            int systemBrightness = Settings.System.getInt(getApplicationContext().getContentResolver(), Settings.System.SCREEN_BRIGHTNESS);
-            if (systemBrightness != brightness) {
-                Settings.System.putInt(getApplicationContext().getContentResolver(), Settings.System.SCREEN_BRIGHTNESS, brightness);
+            //check for a pause in requesting location list updates
+            if(pauseLocationUpdates != null && Utils.dateDiff(Calendar.getInstance(), pauseLocationUpdates, TimeUnit.SECONDS) < 30){
+                Log.i(LOG_TAG,"Location updates paused");
+                return;
             }
-        } catch (SettingNotFoundException ex){
-            //just don't set the brightness (cos not that important)
-        }
 
-        //check for a pause in requesting location list updates
-        if(pauseLocationUpdates != null && Utils.dateDiff(Calendar.getInstance(), pauseLocationUpdates, TimeUnit.SECONDS) < 30){
-            Log.i(LOG_TAG,"Location updates paused");
-            return;
-        }
+            //enough time has elapsed without user interaction so we can close various things
+            closeLocationInfo();
+            ((Spinner2)findViewById(R.id.surfLocation)).close();
+            ViewPager viewPager = findViewById(R.id.viewPager);
+            viewPager.setCurrentItem(0);
 
-        //enough time has elapsed without user interaction so we can close various things
-        closeLocationInfo();
-        ((Spinner2)findViewById(R.id.surfLocation)).close();
 
-        //check to see if the device has changed significanly (either in time period or in change of location in METERS)
-        if(lastDeviceLocation == null || lastDeviceLocation.distanceTo(device.getLocation()) > 500 || Utils.dateDiff(Calendar.getInstance(), deviceLocationLastUpdated, TimeUnit.SECONDS) > 5*60){
-            if(lastDeviceLocation != null)Log.i(LOG_TAG,"Location changed " + lastDeviceLocation.distanceTo(device.getLocation()) + " meters since " + Utils.dateDiff(Calendar.getInstance(), deviceLocationLastUpdated, TimeUnit.SECONDS) + " seconds ago");
-            lastDeviceLocation = device.getLocation();
-            deviceLocationLastUpdated = Calendar.getInstance();
-        } else if(pauseLocationUpdates == null) {
-            Log.i(LOG_TAG,"Location not significantly updated ... distance traveled " + lastDeviceLocation.distanceTo(device.getLocation()) + " meters since " + Utils.dateDiff(Calendar.getInstance(), deviceLocationLastUpdated, TimeUnit.SECONDS) + " seconds ago");
-            return;
-        }
+            //check to see if the device has changed significanly (either in time period or in change of location in METERS)
+            GPSPosition currentPos = viewModel.getGPSPosition().getValue();
+            float distance = lastGPSPosition == null ? -1 : lastGPSPosition.distanceTo(currentPos);
+            if(lastGPSPosition == null || distance > 500 || Utils.dateDiff(Calendar.getInstance(), lastGPSPositionUpdated, TimeUnit.SECONDS) > 5*60){
+                if(lastGPSPosition != null)Log.i(LOG_TAG,"Location changed " + distance + " meters since " + Utils.dateDiff(Calendar.getInstance(), lastGPSPositionUpdated, TimeUnit.SECONDS) + " seconds ago");
+                lastGPSPosition = currentPos;
+                lastGPSPositionUpdated = Calendar.getInstance();
+            } else if(pauseLocationUpdates == null) {
+                Log.i(LOG_TAG,"Location not significantly updated ... distance traveled " + distance + " meters since " + Utils.dateDiff(Calendar.getInstance(), lastGPSPositionUpdated, TimeUnit.SECONDS) + " seconds ago");
+                return;
+            }
 
-        Log.i(LOG_TAG,"Retrieving locations with device at lat/lon: " + device.getLatitude() + "/" + device.getLongitude());
-        //here we request locations
-        ((MainViewModel)viewModel).getLocationsNearby().observe(this, locations -> {
-            //we have a successful return so if there was a service unreachable error earlier that is still showing
-            //then we can dismiss it here
-            if(isErrorShowing() && lastShownErrorCode == SurfForecastRepository.ERROR_SERVICE_UNREACHABLE){
+            //by here we know we should request the list of nearby locations
+            viewModel.getLocationsNearby(currentPos);
+        });
+
+
+        //observe new list of locations
+        viewModel.getLocationsNearby().observe(this, locations->{
+            if(isErrorShowing()){
                 dismissError();
             }
 
             //now fill in the locations
             Log.i(LOG_TAG,"Retrieved " + locations.size() + " locations from server");
-            if(locations.size() > 0) {
-                TypeConverter<Location,String> tc = new TypeConverter<Location,String>(){
-                    @Override
-                    public String convert(Location loc){
-                        String dist = Utils.convert(loc.getDistance(), Utils.Conversions.KM_2_MILES, 1);
-                        return loc.getLocation() + " (" + dist + " miles)";
-                    }
-                };
-                List<String> spinnerList = tc.convertList(locations);
+            if(locations.size() == 0)return;
 
-                Spinner2 locationsSpinnner = findViewById(R.id.surfLocation);
-                if(!locationsSpinnner.isOpen()) {
+            Spinner2 locationsSpinnner = findViewById(R.id.surfLocation);
+            if(locationsSpinnner.isOpen())return;
 
-                    ArrayAdapter<String> adapter = new ArrayAdapter<>(this, R.layout.spinner_item, spinnerList);
-                    adapter.setDropDownViewResource(R.layout.spinner_dropdown);
-                    locationsSpinnner.setAdapter(adapter);
+            List<String> spinnerList = new ArrayList<>();
+            for(Location loc : locations){
+                spinnerList.add(loc.getLocation() + " (" + Utils.convert(loc.getDistance(), Utils.Conversions.KM_2_MILES, 1) + " miles)");
+            }
+            ArrayAdapter<String> adapter = new ArrayAdapter<>(this, R.layout.spinner_item, spinnerList);
+            adapter.setDropDownViewResource(R.layout.spinner_dropdown);
+            locationsSpinnner.setAdapter(adapter);
+            locationsSpinnner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                @Override
+                public void onItemSelected(AdapterView<?> parentView, View selectedItemView, int position, long id) {
+                    if(position < locations.size()) {
+                        Location selectedLocation = locations.get(position);
+                        if(selectedLocation.getLastFeedRunID() == 0){
+                            showError(0, "Location " + selectedLocation.getLocation() + " does not have a forecast");
+                            Log.e(LOG_TAG, "Location " + selectedLocation.getLocation() + " does not have a forecast");
+                            return;
+                        }
 
-                    locationsSpinnner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-                        @Override
-                        public void onItemSelected(AdapterView<?> parentView, View selectedItemView, int position, long id) {
-                            if(position < locations.size()) {
-                                setPauseLocationUpdates(position != 0);
-                                getForecastForLocation(locations.get(position));
+                        boolean forecastHasChanged = currentForecast == null || (currentForecast.getFeedRunID() != selectedLocation.getLastFeedRunID()) || currentForecast.getLocationID() != selectedLocation.getID();
+                        long secsSinceForecastRetrieved = forecastLastRetrieved == null ? -1 : Utils.dateDiff(Calendar.getInstance(), forecastLastRetrieved, TimeUnit.SECONDS);
+                        if(forecastHasChanged || secsSinceForecastRetrieved > 60*60){
+                            Log.i(LOG_TAG, "Retrieving forecast because " + (forecastHasChanged ? "it has changed" : "last retrieved " + secsSinceForecastRetrieved + " secs ago"));
+                            setPauseLocationUpdates(true);
+                            showProgress();
+                            hideSurfConditions();
+                            viewModel.getForecast(selectedLocation.getID());
+                        } else {
+                            setPauseLocationUpdates(false);
+                            if(Utils.dateDiff(Calendar.getInstance(), forecastLastDisplayed, TimeUnit.SECONDS) > 10 * 60){
+                                showForecast(currentForecast); //this is to allow for time updates
+                                Log.i(LOG_TAG, "Re-showing forecast to allow for time changes");
                             }
                         }
-
-                        @Override
-                        public void onNothingSelected(AdapterView<?> parentView) {
-                            // your code here
-                        }
-                    });
+                    }
                 }
-            }
-        }); //end listener for locations list return
-    }
 
-    protected void getForecastForLocation(Location location){
+                @Override
+                public void onNothingSelected(AdapterView<?> parentView) {
+                    // your code here
+                }
+            });
+        }); //end observe nearby locations data
 
-        boolean locationHasChanged = (currentForecast != null && currentForecast.getLocationID() != location.getID());
-
-        //if the current forecast is for the same location then don't immediately go and get a new forecast
-        //instead wait X minutes before doing so
-        if(!locationHasChanged && currentConditionsPage == 0){
-            boolean firstHourIsAhead = displayedFirstHour != null && currentForecast.now().getTimeInMillis() <  displayedFirstHour.getTimeInMillis();
-            int forecastStaleAfter = firstHourIsAhead ? 20 : 5;
-            if(Utils.dateDiff(Calendar.getInstance(), forecastLastDisplayed, TimeUnit.MINUTES) < forecastStaleAfter){
-                return;
-            }
-        }
-
-        //if there is a request to get the forecast for the same location that produced a noForecastForLocation error then return instead
-        if(currentLocation != null && currentLocation.getID() == location.getID() && noForecastForLocationError){
-            return;
-        }
-
-        currentLocation = location;
-        noForecastForLocationError = false;
-        hideSurfConditions();
-        showProgress();
-        ((MainViewModel)viewModel).getForecast(currentLocation.getID()).observe(this, forecast -> {
-
-            //if we are here then either the location has changed OR a certain period has elapsed
-            setCurrentForecast(forecast);
-
+        //observe new forecast data
+        viewModel.getForecast().observe(this, forecast->{
+            forecastLastRetrieved = Calendar.getInstance();
+            showForecast(forecast);
         });
+
+        Logger.info("Main activity created with: use_device_location=" + MainViewModel.USE_DEVICE_LOCATION + ", auto_brightness=" + MainViewModel.AUTO_BRIGHTNESS + " and display type=" + DISPLAY_TYPE);
+        Log.i(LOG_TAG, "onCreate ended");
+
+        //start loading in data
+        showProgress();
+        viewModel.loadData(dataLoadProgress).observe(services -> {
+            startLocationUpdates(false);
+        });
+
+
+    } //end onCreate
+
+    private void startLocationUpdates(boolean restart){
+        lastGPSPosition = null;
+        setPauseLocationUpdates(false);
+        stopTimer();
+
+        if(MainViewModel.USE_DEVICE_LOCATION) {
+            LocationManager locationManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
+            locationListener = new LocationListener() {
+                @Override
+                public void onLocationChanged(android.location.Location location) {
+                    if(currentDeviceLocation == null && location != null){
+                        viewModel.setGPSPositionFromLocation(location);
+                    }
+                    currentDeviceLocation = location;
+                }
+
+                @Override
+                public void onStatusChanged(String s, int i, Bundle bundle) {
+
+                }
+
+                @Override
+                public void onProviderEnabled(String s) {
+
+                }
+
+                @Override
+                public void onProviderDisabled(String s) {
+
+                }
+            };
+            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 10000, 10, locationListener);
+        } else {
+            Log.i(LOG_TAG, "Using server GPS");
+            viewModel.getLatestGPSPosition();
+        }
+
+        startTimer(30);
     }
 
-    protected void setCurrentForecast(Forecast forecast){
-        //if here the forecast being set is different from the one that is already set ... or it's the first forecast being set
-        //... or a certain time has elapsed
+    @Override
+    protected int onTimer(){
+        if(MainViewModel.USE_DEVICE_LOCATION) {
+            if(currentDeviceLocation != null) {
+                viewModel.setGPSPositionFromLocation(currentDeviceLocation);
+            }
+        } else {
+            viewModel.getLatestGPSPosition();
+        }
+
+        return super.onTimer();
+    }
+
+
+    private void showForecast(Forecast forecast){
         Calendar now = Calendar.getInstance();
 
         String s = "Forecast updated ";
@@ -349,14 +412,63 @@ public class MainActivity extends GenericActivity{
 
         currentForecast = forecast;
         forecastLastDisplayed = now;
-        displayedFirstHour = surfConditionsAdapter.getFirstHour();
+        //displayedFirstHour = surfConditionsAdapter.getFirstHour();
 
         Logger.info("Forecast displayed for location ID " + forecast.getLocationID());
     }
 
+    @Override
+    public void onDialogPositiveClick(GenericDialogFragment dialog){
+        if(dialog instanceof ErrorDialogFragment){
+            Throwable t = ((ErrorDialogFragment)dialog).throwable;
+            if(t instanceof WebserviceException && !((WebserviceException)t).isServiceAvailable()){
+                showProgress();
+                hideSurfConditions();
+                viewModel.loadData(dataLoadProgress).observe(services-> {
+                    startLocationUpdates(true);
+                });
+            }
+            Log.i(LOG_TAG, "Error dialog onDialogPositiveClick");
+        }
+    }
+
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+
+        hideSurfConditions();
+    }
+
+
+    @Override
+    public void onRestart(){
+        super.onRestart();
+
+        showSurfConditions();
+    }
+
+    private void showSurfConditions(int visibility){
+        ViewPager viewPager = findViewById(R.id.viewPager);
+        viewPager.setVisibility(visibility);
+
+        TabLayout tabLayout = findViewById(R.id.tabLayout);
+        tabLayout.setVisibility(visibility);
+    }
+
+    private void showSurfConditions(){ showSurfConditions(View.VISIBLE); }
+    private void hideSurfConditions(){ showSurfConditions(View.INVISIBLE); }
+
+    private void setPauseLocationUpdates(boolean pause){
+        pauseLocationUpdates = pause ? Calendar.getInstance() : null;
+        Log.i(LOG_TAG, pause ? "Location updates paused" : "Location updates resumed");
+    }
+
+
     public void openLocationInfo(Location location){
         Log.i(LOG_TAG, "Open location info");
-        locationDialog = new LocationDialogFragment(location);
+        locationDialog = new LocationDialogFragment();
+        locationDialog.location = location;
         locationDialog.show(getSupportFragmentManager(), "LocationDialog");
         setPauseLocationUpdates(true);
     }
@@ -364,5 +476,29 @@ public class MainActivity extends GenericActivity{
     public void closeLocationInfo(){
         if(locationDialog != null)locationDialog.dismiss();
         locationDialog = null;
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults){
+        switch(requestCode){
+            case REQUEST_LOCATION_PERMISSION:
+            case REQUEST_WRITE_PERMISSION:
+                ((SurfForecastApplication) getApplication()).restartApp(1);
+                break;
+
+            default:
+                break;
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        switch (requestCode){
+            case REQUEST_WRITE_PERMISSION:
+            case REQUEST_LOCATION_PERMISSION:
+                ((SurfForecastApplication) getApplication()).restartApp(1);
+                break;
+        }
     }
 }

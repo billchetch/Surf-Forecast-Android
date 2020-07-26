@@ -1,9 +1,9 @@
-package com.bulan_baru.surf_forecast;
+package com.bulan_baru.surf_forecast.services;
 
 import android.content.Intent;
 import android.util.Log;
 
-import com.bulan_baru.surf_forecast_data.services.LocationService;
+import com.bulan_baru.surf_forecast.services.LocationService;
 
 public class SFLocationService extends LocationService {
     @Override

@@ -1,11 +1,9 @@
 package com.bulan_baru.surf_forecast;
 
 import android.app.AlarmManager;
-import android.app.Application;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
@@ -14,26 +12,23 @@ import android.net.wifi.WifiManager;
 import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
-import android.support.v4.app.DialogFragment;
-import android.support.v7.app.AlertDialog;
 import android.util.Log;
-import android.view.WindowManager;
 
-import com.bulan_baru.surf_forecast_data.injection.DaggerRepositoryComponent;
-import com.bulan_baru.surf_forecast_data.injection.RepositoryComponent;
-import com.bulan_baru.surf_forecast_data.utils.Logger;
-import com.bulan_baru.surf_forecast_data.utils.UncaughtExceptionHandler;
-import com.bulan_baru.surf_forecast_data.utils.Utils;
+import com.bulan_baru.surf_forecast.data.SurfForecastRepository;
+import com.bulan_baru.surf_forecast.models.MainViewModel;
+import com.bulan_baru.surf_forecast.services.SFLocationService;
+
+import net.chetch.appframework.ChetchApplication;
+import net.chetch.utilities.Logger;
+import net.chetch.utilities.Utils;
+import net.chetch.webservices.network.NetworkRepository;
 
 import java.util.Calendar;
-import java.util.concurrent.TimeUnit;
 
 
-public class SurfForecastApplication extends Application {
-    static public final String LOG_FILE = "bbsf.log";
-    static private final int TIMER_DELAY_IN_MILLIS = 5*Utils.MINUTE_IN_MILLIS;
+public class SurfForecastApplication extends ChetchApplication {
+    static private final int TIMER_DELAY_IN_MILLIS = 5* Utils.MINUTE_IN_MILLIS;
 
-    RepositoryComponent repositoryComponent;
 
     Handler timerHandler = new Handler();
     Runnable timerRunnable = new Runnable() {
@@ -50,44 +45,39 @@ public class SurfForecastApplication extends Application {
 
     @Override
     public void onCreate() {
+        uncaughtExceptionHandler = null; //use the default one
+        LOG_FILE = "bbsf.log";
         super.onCreate();
 
-        //initialise logger
-        Logger.init(this, LOG_FILE);
-        //Logger.clear();
-        Logger.info("Application started");
-
-        //build repository
-        repositoryComponent = DaggerRepositoryComponent.builder().build();
-
         //set client device info
-        String androidID = Settings.Secure.getString(this.getContentResolver(), Settings.Secure.ANDROID_ID);
-        repositoryComponent.getRepository().getClientDevice().setDeviceID(androidID);
+        //String androidID = Settings.Secure.getString(this.getContentResolver(), Settings.Secure.ANDROID_ID);
 
-        //set default uce handler
-        Thread.setDefaultUncaughtExceptionHandler(new UCEHandler(this, LOG_FILE, repositoryComponent.getRepository().getClientDevice()));
+        try {
+            //set network
+            setDeviceNetwork();
 
-        //set network
-        setDeviceNetwork();
+            //set default prefs and API Base URL
+            PreferenceManager.setDefaultValues(this, R.xml.preferences, true);
+            SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
+            String apiBaseURL = sharedPref.getString("api_base_url", null);
+            NetworkRepository.getInstance().setAPIBaseURL(apiBaseURL);
 
-        //set default prefs and API Base URL
-        PreferenceManager.setDefaultValues(this, R.xml.preferences, true);
-        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
-        String apiBaseURL = sharedPref.getString(SFLocationService.API_BASE_URL, null);
-        repositoryComponent.getRepository().getServiceManager().setApiBaseURL(apiBaseURL);
+            boolean useDeviceLocation = sharedPref.getBoolean("use_device_location", true);
+            MainViewModel.USE_DEVICE_LOCATION = useDeviceLocation;
 
-        boolean useDeviceLocation = sharedPref.getBoolean("use_device_location", true);
-        repositoryComponent.getRepository().setUseDeviceLocation(useDeviceLocation);
+            boolean autoBrightness = sharedPref.getBoolean("automatic_brightness", false);
+            MainViewModel.AUTO_BRIGHTNESS = autoBrightness;
 
-        float maxDistance = sharedPref.getFloat("max_distance", -1);
-        repositoryComponent.getRepository().setMaxDistance(maxDistance);
+            float maxDistance = sharedPref.getFloat("max_distance", -1);
+            SurfForecastRepository.getInstance().setMaxDistance(maxDistance);
 
-        restartAfter = sharedPref.getInt("restart_app_after", 12);
+            restartAfter = sharedPref.getInt("restart_app_after", 12);
 
-        //add a network change listener to handle network state changes
-        IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(WifiManager.NETWORK_STATE_CHANGED_ACTION);
-        registerReceiver(new BroadcastReceiver() {
+
+            //add a network change listener to handle network state changes
+            IntentFilter intentFilter = new IntentFilter();
+            intentFilter.addAction(WifiManager.NETWORK_STATE_CHANGED_ACTION);
+            registerReceiver(new BroadcastReceiver() {
                 @Override
                 public void onReceive(Context context, Intent intent) {
                     setDeviceNetwork();
@@ -95,10 +85,12 @@ public class SurfForecastApplication extends Application {
             }, intentFilter);
 
 
-        //fire up timer
-        timerHandler.postDelayed(timerRunnable, TIMER_DELAY_IN_MILLIS);
-        appStarted = Calendar.getInstance();
-
+            //fire up timer
+            timerHandler.postDelayed(timerRunnable, TIMER_DELAY_IN_MILLIS);
+            appStarted = Calendar.getInstance();
+        } catch (Exception e){
+            Log.e("Application", e.getMessage());
+        }
     }
 
     protected void onTimer(){
@@ -136,11 +128,11 @@ public class SurfForecastApplication extends Application {
     protected void setDeviceNetwork(){
         Context context = getApplicationContext();
 
-        Log.i("SFA", "setDevnniceNetwork");
+        Log.i("SFA", "setDeviceNetwork");
         WifiManager wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
         WifiInfo wifiInfo = wifiManager.getConnectionInfo();
         if (wifiInfo != null) {
-            repositoryComponent.getRepository().getClientDevice().setDeviceNetwork(wifiInfo.getSSID());
+            //repositoryComponent.getRepository().getClientDevice().setDeviceNetwork(wifiInfo.getSSID());
         }
     }
 

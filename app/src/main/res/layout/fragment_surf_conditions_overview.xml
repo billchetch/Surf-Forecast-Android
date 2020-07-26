@@ -10,7 +10,7 @@
     <TextView
         android:id="@+id/overviewText"
         android:layout_width="0dp"
-        android:layout_height="20dp"
+        android:layout_height="wrap_content"
         android:layout_marginEnd="8dp"
         android:layout_marginStart="8dp"
         android:layout_marginTop="8dp"
@@ -21,7 +21,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/expandIcon"
         app:layout_constraintTop_toTopOf="parent"
-        tools:text="asdf" />
+        tools:text="Conditions overview text " />
 
     <ImageView
         android:id="@+id/expandIcon"
@@ -32,5 +32,21 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:srcCompat="@drawable/ic_round_expand_more_24px" />
+
+    <HorizontalScrollView
+        android:id="@+id/graphScrollView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/overviewText">
+
+        <LinearLayout
+            android:id="@+id/graphContainer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"></LinearLayout>
+    </HorizontalScrollView>
 
 </android.support.constraint.ConstraintLayout>

@@ -3,32 +3,34 @@ package com.bulan_baru.surf_forecast;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.DashPathEffect;
-import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.os.Handler;
+import android.support.constraint.ConstraintLayout;
 import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
+import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.ImageView;
 import android.view.View.OnClickListener;
 import android.graphics.Paint;
 import android.content.Context;
 
-import com.bulan_baru.surf_forecast_data.Forecast;
-import com.bulan_baru.surf_forecast_data.ForecastDay;
-import com.bulan_baru.surf_forecast_data.ForecastDetail;
-import com.bulan_baru.surf_forecast_data.ForecastHour;
-import com.bulan_baru.surf_forecast_data.SurfForecastService;
-import com.bulan_baru.surf_forecast_data.utils.Utils;
+import com.bulan_baru.surf_forecast.data.Forecast;
+import com.bulan_baru.surf_forecast.data.ForecastDay;
+import com.bulan_baru.surf_forecast.data.ForecastDetail;
+import com.bulan_baru.surf_forecast.data.ForecastHour;
+
+import net.chetch.utilities.Utils;
 
 import java.util.Calendar;
-import java.util.Date;
 import java.util.List;
 import java.util.ArrayList;
 
@@ -60,7 +62,11 @@ public class SurfConditionsOverviewFragment extends Fragment implements OnClickL
         Log.i("SCOF TIMER", "timer");
 
         if(expanded){
-            collapse();
+            if(MainActivity.DISPLAY_TYPE == MainActivity.DisplayType.TABLET) {
+                collapse();
+            } else {
+                drawGraphViews(true, false);
+            }
         }
 
     }
@@ -110,26 +116,24 @@ public class SurfConditionsOverviewFragment extends Fragment implements OnClickL
         private List<GraphSegment> segments = new ArrayList<>();
         private Typeface normalTypeFace = Typeface.create("Helvetica", Typeface.NORMAL);
         private Typeface boldTypeFace = Typeface.create("Helvetica", Typeface.BOLD);
+        public int defaultTextSize = 16;
 
         private Forecast forecast;
-        private int index;
-        private int length;
         private Calendar firstLight;
         private Calendar lastLight;
         private long xFirst;
         private long xLast;
+        public int xNow = -1;
         Calendar firstHour; //00:00 on the same day as first light
         Calendar lastHour; //23:59 on the same day as first light
         double maxAmplitude;
 
         String title;
 
-        public GraphView(Context context, int index, int length, Forecast forecast, Calendar firstLight, Calendar lastLight) {
+        public GraphView(Context context, Forecast forecast, Calendar firstLight, Calendar lastLight) {
             super(context);
 
             this.forecast = forecast;
-            this.index = index;
-            this.length = length;
             this.firstLight = firstLight;
             this.lastLight = lastLight;
 
@@ -221,17 +225,17 @@ public class SurfConditionsOverviewFragment extends Fragment implements OnClickL
             //general settings
             paint.setAntiAlias(true);
             paint.setTypeface(boldTypeFace);
-            paint.setTextSize(16);
+            paint.setTextSize(defaultTextSize);
 
             //we determine the area the graph will take up .. the graph draws from '00:00:00 to 23:59:59...'
-            int defaultMargin = 16; //maybe make this settable
-            int topMargin = 54;
-            int height = (canvas.getHeight() - topMargin)/length;
+            int defaultMargin = defaultTextSize; //maybe make this settable
+            int topMargin = 8;
+            int height = (canvas.getHeight() - topMargin);
             int width = canvas.getWidth() - 2*defaultMargin;
             Rect graphRect = new Rect();
             graphRect.left = defaultMargin;
             graphRect.right = graphRect.left + width;
-            graphRect.top =  topMargin + index*height + defaultMargin;
+            graphRect.top =  topMargin + defaultMargin;
             graphRect.bottom = graphRect.top + height - 3*defaultMargin;
 
             //determine 'now' and 'first light' and 'last light' positions
@@ -346,6 +350,7 @@ public class SurfConditionsOverviewFragment extends Fragment implements OnClickL
             //finally draw 'now' if relevant
             if(nowInMillis >= firstHour.getTimeInMillis() && nowInMillis < lastHour.getTimeInMillis()){
                 float x = (float)((double)(nowInMillis - firstHour.getTimeInMillis()) * xScaleMillis2Points);
+                xNow = (int)x; //record for scrolling purposes
 
                 //draw line
                 paint.setColor(Color.CYAN);
@@ -401,19 +406,33 @@ public class SurfConditionsOverviewFragment extends Fragment implements OnClickL
         expanded = false;
 
         for(int i = 0; i < forecastDays.size(); i++){
+            //get the
             ForecastDay fd = forecastDays.get(i);
-            firstAndLastLight += "First light @ " + Utils.formatDate(fd.getFirstLight(), TIME_FORMAT);
-            firstAndLastLight += " | Last light @ " + Utils.formatDate(fd.getLastLight(), TIME_FORMAT);
-            firstAndLastLight += " ";
 
+            //get tide data for that day
             List<ForecastDetail.TideData> tData = fd.getTideData();
-            for(int j = 0; j < tData.size(); j++) {
-                ForecastDetail.TideData td = tData.get(j);
-                tideData += td.position + " of " + Utils.convert(td.height, Utils.Conversions.METERS_2_FEET, 0) + "ft @ " + Utils.formatDate(td.time, TIME_FORMAT);
-                tideData += " | ";
+
+            //create a useful range to exclude showing tide data that's not immediately relevant
+            if(i == 0) {
+                firstAndLastLight += "First light @ " + Utils.formatDate(fd.getFirstLight(), TIME_FORMAT);
+                firstAndLastLight += " | Last light @ " + Utils.formatDate(fd.getLastLight(), TIME_FORMAT);
+                firstAndLastLight += " ";
+
+                Calendar beforeFirstLight = ((Calendar) fd.getFirstLight().clone());
+                beforeFirstLight.add(Calendar.MINUTE, -60);
+                Calendar afterLastLight = ((Calendar) fd.getLastLight().clone());
+                afterLastLight.add(Calendar.MINUTE, 60);
+
+                //build up the tide data to show in the overview text area
+                for (int j = 0; j < tData.size(); j++) {
+                    ForecastDetail.TideData td = tData.get(j);
+                    if (Utils.dateInRange(td.time, beforeFirstLight, afterLastLight)) {
+                        tideData += td.position + " of " + Utils.convert(td.height, Utils.Conversions.METERS_2_FEET, 0) + "ft @ " + Utils.formatDate(td.time, TIME_FORMAT);
+                        tideData += " | ";
+                    }
+                }
             }
-
-
+            //We add some extra tide data (prev and next days) and hence extra graph segments so we can have a complete graph
             Calendar cal = ((Calendar)fd.date.clone());
             cal.add(Calendar.DATE, -1);
             ForecastDay pfd = forecast.getDay(cal);
@@ -431,15 +450,20 @@ public class SurfConditionsOverviewFragment extends Fragment implements OnClickL
                 //TODO: handle the case of no next day available
             }
 
-            GraphView graphView = new GraphView(getActivity(), i, forecastDays.size(), forecast, fd.getFirstLight(), fd.getLastLight());
-            graphView.setVisibility(View.GONE);
+            GraphView graphView = new GraphView(getActivity(), forecast, fd.getFirstLight(), fd.getLastLight());
+            if(MainActivity.DISPLAY_TYPE == MainActivity.DisplayType.TABLET){
+                graphView.defaultTextSize = 16;
+            } else {
+                graphView.defaultTextSize = 32;
+            }
 
             //build up detail for this day and add graph segments
             for(int j = 1; j < tData.size(); j++) {
                 graphView.addSegment(tData.get(j - 1), tData.get(j));
             }
+
+            graphView.setOnClickListener(this);
             graphViews.add(graphView);
-            ((ViewGroup)rootView).addView(graphView);
         }
 
         String overviewText = tideData + " .... " + firstAndLastLight;
@@ -459,29 +483,62 @@ public class SurfConditionsOverviewFragment extends Fragment implements OnClickL
         }
     }
 
+    private void drawGraphViews(boolean show, boolean scrollIntoView){
+        LinearLayout layout = rootView.findViewById(R.id.graphContainer);
+        layout.removeAllViews();
+
+        int width = 0;
+        int height = 0;
+        if(MainActivity.DISPLAY_TYPE == MainActivity.DisplayType.TABLET) {
+            width = (int) (1 * getActivity().getWindow().getDecorView().getWidth());
+            height = (int) (0.25 * getActivity().getWindow().getDecorView().getHeight());
+        } else {
+            width = (int) (2 * getActivity().getWindow().getDecorView().getWidth());
+            height = (int) (0.25 * getActivity().getWindow().getDecorView().getHeight());
+        }
+
+        if(show) {
+            HorizontalScrollView sv = rootView.findViewById(R.id.graphScrollView);
+            if(graphViews.size() > 0){
+                for(int i = 0; i < graphViews.size() ; i++) {
+                    GraphView gv = graphViews.get(i);
+                    ViewGroup.LayoutParams lp = new ViewGroup.LayoutParams(width, height);
+                    gv.setLayoutParams(lp);
+                    layout.addView(gv);
+
+                    if(scrollIntoView && i == 0) {
+                        sv.post(() -> {
+                            sv.smoothScrollTo(gv.xNow > 48 ? gv.xNow - 48 : 0, 0);
+                        });
+                    }
+                }
+            }
+            layout.setVisibility(View.VISIBLE);
+        } else {
+            layout.setVisibility(View.GONE);
+        }
+    }
+
     public void expand(){
         expand(true);
     }
 
     public void expand(boolean expand){
         expanded = expand;
-        LinearLayout.LayoutParams lp = (LinearLayout.LayoutParams)rootView.getLayoutParams();
-
-        float scaleBy = 7.0f*graphViews.size();
-        lp.weight = expanded ? (1.0f/scaleBy)*lp.weight : scaleBy*lp.weight;
-        rootView.setLayoutParams(lp);
 
         ImageView iv = rootView.findViewById(R.id.expandIcon);
         iv.setImageResource(expanded ? R.drawable.ic_round_expand_less_24px : R.drawable.ic_round_expand_more_24px);
 
-        for(GraphView graphView : graphViews){
-            graphView.setVisibility(expanded ? View.VISIBLE : View.GONE);
+        boolean today = Utils.isToday(forecastDays.get(0).date);
+        drawGraphViews(expanded, today);
+
+        boolean startTimer = expanded && timerDelay > 0;
+        if(MainActivity.DISPLAY_TYPE == MainActivity.DisplayType.HAND_PHONE){
+            startTimer = startTimer && today;
         }
 
-        rootView.requestLayout();
-
-        //set timer
-        if(expanded && timerDelay > 0){
+        //set close timer
+        if (startTimer) {
             timerHandler.postDelayed(timerRunnable, timerDelay * 1000);
         } else {
             timerHandler.removeCallbacks(timerRunnable);

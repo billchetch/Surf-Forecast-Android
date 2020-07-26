@@ -7,15 +7,14 @@ import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.PagerAdapter;
 import android.util.Log;
 
-import com.bulan_baru.surf_forecast_data.Forecast;
-import com.bulan_baru.surf_forecast_data.ForecastDay;
-import com.bulan_baru.surf_forecast_data.ForecastHour;
-import com.bulan_baru.surf_forecast_data.utils.Utils;
+import com.bulan_baru.surf_forecast.data.Forecast;
+import com.bulan_baru.surf_forecast.data.ForecastDay;
+import com.bulan_baru.surf_forecast.data.ForecastHour;
+import net.chetch.utilities.Utils;
 
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 public class SurfConditionsFragmentAdapter extends FragmentPagerAdapter {
 
@@ -30,7 +29,6 @@ public class SurfConditionsFragmentAdapter extends FragmentPagerAdapter {
     private List<Calendar> dates;
     private List<List<ForecastHour>> hourSpreads;
 
-
     public SurfConditionsFragmentAdapter(Context context, FragmentManager fm) {
         super(fm);
         this.context = context;
@@ -40,6 +38,7 @@ public class SurfConditionsFragmentAdapter extends FragmentPagerAdapter {
         base.set(Calendar.DATE, 1);
 
         baseTimeForId = base.getTimeInMillis();
+
 
     }
 
@@ -134,11 +133,20 @@ public class SurfConditionsFragmentAdapter extends FragmentPagerAdapter {
     @Override
     public CharSequence getPageTitle(int position) {
         Calendar cal = dates.get(position);
-        String pageTitle = Utils.formatDate(cal, "EEE, d MMM");
-        if(position == 0) {
-            pageTitle = Utils.isToday(cal, forecast.now()) ? "Today" : "Tomorrow";
-        } else if(position == 1 && Utils.isToday(dates.get(0), forecast.now())){
-            pageTitle = "Tomorrow";
+
+        String pageTitle;
+        if(MainActivity.DISPLAY_TYPE == MainActivity.DisplayType.TABLET) {
+            pageTitle = Utils.formatDate(cal, "EEE, d MMM");
+            if (position == 0) {
+                pageTitle = Utils.isToday(cal, forecast.now()) ? "Today" : "Tomorrow";
+            } else if (position == 1 && Utils.isToday(dates.get(0), forecast.now())) {
+                pageTitle = "Tomorrow";
+            }
+        } else {
+            pageTitle = Utils.formatDate(cal, "EEE");
+            if (position == 0 && Utils.isToday(cal, forecast.now())) {
+                pageTitle =  "NOW";
+            }
         }
         return pageTitle;
     }

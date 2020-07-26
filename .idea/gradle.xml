@@ -9,7 +9,10 @@
           <set>
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/app" />
-            <option value="$PROJECT_DIR$/surf_forecast_data" />
+            <option value="$PROJECT_DIR$/appframework" />
+            <option value="$PROJECT_DIR$/appresources" />
+            <option value="$PROJECT_DIR$/utilities" />
+            <option value="$PROJECT_DIR$/webservices" />
           </set>
         </option>
         <option name="resolveModulePerSourceSet" value="false" />

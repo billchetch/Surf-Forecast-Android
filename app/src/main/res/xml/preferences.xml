@@ -21,4 +21,10 @@
         android:numeric="integer"
         android:summary="@string/settings.restart_after.prompt"
         android:title="Restart After (hours)" />
+
+    <CheckBoxPreference
+        android:key="automatic_brightness"
+        android:title="Automatically dim device depending on time of day"
+        android:summary="Use if auto sensing brighness is not working well enough"
+        android:defaultValue="false"/>
 </PreferenceScreen>

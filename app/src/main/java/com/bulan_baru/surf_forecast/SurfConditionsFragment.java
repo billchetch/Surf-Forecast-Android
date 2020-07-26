@@ -10,11 +10,12 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.view.View.OnClickListener;
 
-import com.bulan_baru.surf_forecast_data.Forecast;
-import com.bulan_baru.surf_forecast_data.ForecastDay;
-import com.bulan_baru.surf_forecast_data.ForecastDetail;
-import com.bulan_baru.surf_forecast_data.ForecastHour;
-import com.bulan_baru.surf_forecast_data.utils.Utils;
+import com.bulan_baru.surf_forecast.data.Forecast;
+import com.bulan_baru.surf_forecast.data.ForecastDay;
+import com.bulan_baru.surf_forecast.data.ForecastDetail;
+import com.bulan_baru.surf_forecast.data.ForecastHour;
+
+import net.chetch.utilities.Utils;
 
 import java.util.List;
 import java.util.Calendar;

@@ -18,8 +18,8 @@
         android:networkSecurityConfig="@xml/network_security_config"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.AppCompat.DayNight.NoActionBar"
-        android:name="SurfForecastApplication">
+        android:theme="@style/AppTheme"
+        android:name=".SurfForecastApplication">
         <activity
             android:name=".MainActivity">
             <intent-filter>
@@ -28,24 +28,18 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
         <activity android:name=".SettingsActivity"></activity>
 
         <activity
-            android:name=".UCEActivity">
+            android:name="net.chetch.appframework.UCEActivity">
             <intent-filter>
-                <action android:name="com.bulan_baru.broadcast.UNCAUGHT_EXCEPTION" />
-
+                <action android:name="com.bulan_baru.surf_forecast.SurfForecastApplication.UNCAUGHT_EXCEPTION" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
 
-        <service
-            android:name=".SFLocationService"
-            android:exported="true">
-            <intent-filter>
-                <action android:name=".SFLocationService" />
-            </intent-filter>
-        </service>
+
     </application>
 
 </manifest>
