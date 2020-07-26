@@ -41,7 +41,9 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/actionbar"
         app:tabGravity="fill"
-        app:tabTextColor="@color/white">
+        app:tabIndicatorColor="@color/bluegreen"
+        app:tabSelectedTextColor="@color/colorAccent"
+        app:tabTextColor="@color/mediumGrey">
 
         <android.support.design.widget.TabItem
             android:layout_width="match_parent"
