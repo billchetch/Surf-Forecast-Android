@@ -27,6 +27,10 @@ public class ForecastHour extends ForecastDetail {
     @SerializedName("rating")
     private WeightedDetail rating;
 
+    @SerializedName("bb_rating")
+    private Double bbRating;
+
+
     public String getSwellHeight(){
         return swellHeight.getString();
     }
@@ -54,4 +58,6 @@ public class ForecastHour extends ForecastDetail {
     public Integer getTidePosition(){ return tidePosition; }
 
     public String getRating(){ return rating.getString(); }
+
+    public Double getBBRating(){ return bbRating; }
 }

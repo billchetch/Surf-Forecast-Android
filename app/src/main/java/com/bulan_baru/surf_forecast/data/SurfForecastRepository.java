@@ -68,7 +68,9 @@ public class SurfForecastRepository extends WebserviceRepository<ISurfForecastSe
     public DataStore<Locations> getLocationsNearby(GPSPosition pos){
         DataCache.CacheEntry<Locations> entry = cache.getCacheEntry("locations-nearby", null, DataCache.SHORT_CACHE);
 
-        service.getLocations(pos.getLatitude(), pos.getLongitude(), maxDistance).enqueue(createCallback(entry));
+        if(entry.requiresUpdating()) {
+            service.getLocations(pos.getLatitude(), pos.getLongitude(), maxDistance).enqueue(createCallback(entry));
+        }
 
         return entry;
     }
@@ -77,7 +79,9 @@ public class SurfForecastRepository extends WebserviceRepository<ISurfForecastSe
     public DataStore<Forecast> getForecast(int locationID){
         DataCache.CacheEntry<Forecast> entry = cache.getCacheEntry("forecast-" + locationID);
 
-        service.getForecast(locationID).enqueue(createCallback(entry));
+        if(entry.requiresUpdating()) {
+            service.getForecast(locationID).enqueue(createCallback(entry));
+        }
 
         return entry;
     }

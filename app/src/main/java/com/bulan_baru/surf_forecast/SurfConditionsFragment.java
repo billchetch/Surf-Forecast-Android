@@ -92,7 +92,9 @@ public class SurfConditionsFragment extends Fragment {
 
                 //rating
                 Integer rating = 0;
-                if (fh.getRating() != null) {
+                if(fh.getBBRating() != null){
+                    rating = (int) Math.round(fh.getBBRating());
+                } else if (fh.getRating() != null) {
                     rating = (int) Math.round(Double.parseDouble(fh.getRating()));
                 }
                 for (int j = 1; j <= starIDs.length; j++) {

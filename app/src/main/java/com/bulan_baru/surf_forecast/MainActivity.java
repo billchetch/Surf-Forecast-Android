@@ -422,6 +422,7 @@ public class MainActivity extends net.chetch.appframework.GenericActivity  imple
         if(dialog instanceof ErrorDialogFragment){
             Throwable t = ((ErrorDialogFragment)dialog).throwable;
             if(t instanceof WebserviceException && !((WebserviceException)t).isServiceAvailable()){
+                currentForecast = null;
                 showProgress();
                 hideSurfConditions();
                 viewModel.loadData(dataLoadProgress).observe(services-> {

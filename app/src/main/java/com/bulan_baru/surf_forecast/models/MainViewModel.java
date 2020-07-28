@@ -49,12 +49,11 @@ public class MainViewModel extends WebserviceViewModel {
         addRepo(gpsRepository);
 
 
-        serverTimeDisparityOption = ServerTimeDisparityOptions.LOG_WARNING;
-
-        permissableServerTimeDifference = 0;
+        permissableServerTimeDifference = 60*2;
+        serverTimeDisparityOption = ServerTimeDisparityOptions.ERROR;
 
         liveDataGPSPosition.observeForever(pos->{
-            if(pos != null) {
+            if(pos != null && servicesConfigured) {
                 surfForecastRepository.getPositionInfo(pos).add(liveDataPositionInfo);
             }
         });
