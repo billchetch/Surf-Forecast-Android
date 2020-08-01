@@ -11,8 +11,8 @@ import java.util.Calendar;
 public class PositionInfo extends DataObject{
 
     @Override
-    public void init() {
-        super.init();
+    public void initialise() {
+        super.initialise();
 
         asDouble("latitude", "longitude");
     }

@@ -8,6 +8,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
+import android.content.res.Configuration;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.net.Uri;
@@ -18,6 +19,7 @@ import android.support.design.widget.TabLayout;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.view.ViewPager;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
@@ -108,6 +110,8 @@ public class MainActivity extends net.chetch.appframework.GenericActivity  imple
 
         DISPLAY_TYPE =  DisplayType.valueOf(getString(R.string.display_type));
 
+        Configuration configuration = getResources().getConfiguration();
+        Log.i(LOG_TAG, "Metrics of width, smallest width, height: " + configuration.screenWidthDp + "," + configuration.smallestScreenWidthDp + "," + configuration.screenHeightDp);
         Log.i(LOG_TAG, "Creating main activity or device " + DISPLAY_TYPE);
 
         //set up some generic stuff
@@ -119,19 +123,25 @@ public class MainActivity extends net.chetch.appframework.GenericActivity  imple
             setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         } else {
             setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+            View forecastInfoText = findViewById(R.id.forecastInfo);
+            forecastInfoText.setOnClickListener(view->{
+                ((Spinner2)findViewById(R.id.surfLocation)).performClick();
+            });
         }
 
         hideSurfConditions();
         hideProgress();
 
-        View locationInfoBtn = findViewById(R.id.locationInfo);
+        View locationInfoBtn = findViewById(DISPLAY_TYPE == DisplayType.TABLET ? R.id.locationInfo : R.id.logo);
         locationInfoBtn.setOnClickListener(view -> {
-                if(currentForecast == null)return;
-                Location loc = viewModel.getLocation(currentForecast.getLocationID());
-                if(loc != null){
-                    openLocationInfo(loc);
-                }
-            });
+            if(currentForecast == null)return;
+            Location loc = viewModel.getLocation(currentForecast.getLocationID());
+            if(loc != null){
+                openLocationInfo(loc);
+            }
+        });
+
+
 
 
         //get the model, load data and add data observers
@@ -215,9 +225,10 @@ public class MainActivity extends net.chetch.appframework.GenericActivity  imple
             if(locationsSpinnner.isOpen())return;
 
             List<String> spinnerList = new ArrayList<>();
-            for(Location loc : locations){
+            for (Location loc : locations) {
                 spinnerList.add(loc.getLocation() + " (" + Utils.convert(loc.getDistance(), Utils.Conversions.KM_2_MILES, 1) + " miles)");
             }
+
             ArrayAdapter<String> adapter = new ArrayAdapter<>(this, R.layout.spinner_item, spinnerList);
             adapter.setDropDownViewResource(R.layout.spinner_dropdown);
             locationsSpinnner.setAdapter(adapter);

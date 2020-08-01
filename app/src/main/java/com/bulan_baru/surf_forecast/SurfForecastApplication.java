@@ -60,6 +60,7 @@ public class SurfForecastApplication extends ChetchApplication {
             PreferenceManager.setDefaultValues(this, R.xml.preferences, true);
             SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
             String apiBaseURL = sharedPref.getString("api_base_url", null);
+            Log.i("Application", "Services API URL: " + apiBaseURL);
             NetworkRepository.getInstance().setAPIBaseURL(apiBaseURL);
 
             boolean useDeviceLocation = sharedPref.getBoolean("use_device_location", true);

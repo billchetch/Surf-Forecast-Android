@@ -8,7 +8,7 @@
         android:singleLine="false"
         android:title="API Base URL"
         android:summary="Set the API base URL here"
-        android:defaultValue="http://sf.bulan-baru.com/api/"/>
+        android:defaultValue="http://sf.bulan-baru.com:8001/api/"/>
     <CheckBoxPreference
         android:key="use_device_location"
         android:title="Enable Device Location"

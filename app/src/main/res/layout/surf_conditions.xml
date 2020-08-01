@@ -119,7 +119,6 @@
             android:text="Tide"
             android:textColor="@color/lightGrey"
             android:textSize="18dp"
-            android:textStyle="bold"
             app:layout_constraintStart_toEndOf="@+id/tideDirection"
             app:layout_constraintTop_toTopOf="parent" />
     </android.support.constraint.ConstraintLayout>

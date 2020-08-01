@@ -7,11 +7,10 @@ public class Location extends DataObject {
     public static final int TO_STRING_OPTION_DISTANCE = 4;
 
     @Override
-    public void init() {
-        super.init();
+    public void initialise() {
+        super.initialise();
 
-        asDouble("latitude", "longitude", "distance");
-        asString("comment");
+        asDouble("latitude","longitude","distance","comment");
     }
 
     public void setLocation(String location){
