@@ -18,16 +18,14 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
-import android.provider.Settings;
-import android.support.v4.app.NotificationCompat;
-import android.support.v4.content.ContextCompat;
+
+import androidx.core.app.NotificationCompat;
+import androidx.core.content.ContextCompat;
 import android.util.Log;
 
 import com.bulan_baru.surf_forecast.R;
 //import com.bulan_baru.surf_forecast.data.ClientDevice;
-import com.bulan_baru.surf_forecast.data.SurfForecastRepository;
 
-import java.util.concurrent.TimeUnit;
 
 abstract public class LocationService extends Service {
     final public static int ONGOING_NOTIFICATION_ID = 1;

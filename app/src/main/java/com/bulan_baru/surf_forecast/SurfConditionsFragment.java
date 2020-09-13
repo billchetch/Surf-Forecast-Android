@@ -1,18 +1,16 @@
 package com.bulan_baru.surf_forecast;
 
 import android.os.Bundle;
-import android.support.v4.app.Fragment;
+import androidx.fragment.app.Fragment;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.view.View.OnClickListener;
 
 import com.bulan_baru.surf_forecast.data.Forecast;
 import com.bulan_baru.surf_forecast.data.ForecastDay;
-import com.bulan_baru.surf_forecast.data.ForecastDetail;
 import com.bulan_baru.surf_forecast.data.ForecastHour;
 
 import net.chetch.utilities.Utils;

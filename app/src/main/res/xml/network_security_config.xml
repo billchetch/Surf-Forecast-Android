@@ -5,5 +5,7 @@
         <domain includeSubdomains="true">www.bulan-baru.com</domain>
         <domain includeSubdomains="true">sf.bulan-baru.com</domain>
         <domain includeSubdomains="true">192.168.43.123</domain>
+        <domain includeSubdomains="true">192.168.0.106</domain>
+        <domain includeSubdomains="true">192.168.0.52</domain>
     </domain-config>
 </network-security-config>

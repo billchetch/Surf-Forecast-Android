@@ -1,13 +1,12 @@
 package com.bulan_baru.surf_forecast;
 
 import android.Manifest;
-import android.app.Activity;
-import android.arch.lifecycle.Observer;
-import android.arch.lifecycle.ViewModelProviders;
+
+import androidx.lifecycle.Observer;
+import androidx.lifecycle.ViewModelProviders;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
-import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -15,11 +14,11 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
-import android.support.design.widget.TabLayout;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
-import android.support.v4.view.ViewPager;
-import android.util.DisplayMetrics;
+import com.google.android.material.tabs.TabLayout;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+import androidx.viewpager.widget.ViewPager;
+
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
@@ -31,7 +30,6 @@ import android.provider.Settings.SettingNotFoundException;
 import com.bulan_baru.surf_forecast.models.MainViewModel;
 import com.bulan_baru.surf_forecast.data.Forecast;
 import com.bulan_baru.surf_forecast.data.Location;
-import com.bulan_baru.surf_forecast.services.SFLocationService;
 
 import net.chetch.appframework.ErrorDialogFragment;
 import net.chetch.appframework.GenericDialogFragment;
@@ -140,8 +138,6 @@ public class MainActivity extends net.chetch.appframework.GenericActivity  imple
                 openLocationInfo(loc);
             }
         });
-
-
 
 
         //get the model, load data and add data observers
@@ -318,16 +314,25 @@ public class MainActivity extends net.chetch.appframework.GenericActivity  imple
                 }
             };
             locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 10000, 10, locationListener);
-        } else {
-            Log.i(LOG_TAG, "Using server GPS");
-            viewModel.getLatestGPSPosition();
-        }
+            if(currentDeviceLocation == null){
+                currentDeviceLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+                if(currentDeviceLocation == null){
+                    showError("Cannot obtain last known GPS position. Please ensure your device is recieving GPS signals.");
+                }
+            }
 
-        startTimer(30);
+            Log.i(LOG_TAG, "Started using device location");
+            startTimer(2);
+        } else {
+            Log.i(LOG_TAG, "Started using server GPS");
+            viewModel.getLatestGPSPosition();
+            startTimer(30);
+        }
     }
 
     @Override
     protected int onTimer(){
+        int nextTimer = 30;
         if(MainViewModel.USE_DEVICE_LOCATION) {
             if(currentDeviceLocation != null) {
                 viewModel.setGPSPositionFromLocation(currentDeviceLocation);
@@ -336,7 +341,7 @@ public class MainActivity extends net.chetch.appframework.GenericActivity  imple
             viewModel.getLatestGPSPosition();
         }
 
-        return super.onTimer();
+        return nextTimer;
     }
 
 

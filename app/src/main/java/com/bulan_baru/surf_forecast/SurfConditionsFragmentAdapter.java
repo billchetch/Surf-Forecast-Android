@@ -1,14 +1,13 @@
 package com.bulan_baru.surf_forecast;
 
 import android.content.Context;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentPagerAdapter;
-import android.support.v4.view.PagerAdapter;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentPagerAdapter;
+import androidx.viewpager.widget.PagerAdapter;
 import android.util.Log;
 
 import com.bulan_baru.surf_forecast.data.Forecast;
-import com.bulan_baru.surf_forecast.data.ForecastDay;
 import com.bulan_baru.surf_forecast.data.ForecastHour;
 import net.chetch.utilities.Utils;
 
@@ -73,8 +72,14 @@ public class SurfConditionsFragmentAdapter extends FragmentPagerAdapter {
         hourSpreads = new ArrayList<>();
         hourSpreads.add(forecast.getHoursSpread(startDate, STEPS, MIN_INTERVAL, MAX_INTERVAL));
 
+        //get all dates and only use the first 7 (after this it messes with display and the quality of the forecast is no good)
+        dates = new ArrayList<Calendar>();
+        List<Calendar> allDates = forecast.getValidDates(startDate, forecast.getForecastTo());
+        for(int i = 0; i < Math.min(allDates.size(), 7); i++){
+            dates.add(allDates.get(i));
+        }
+
         //sanitise remaining days so they all start from first light
-        dates = forecast.getValidDates(startDate, forecast.getForecastTo());
         for(int i = 1; i < dates.size(); i++){
             firstLight = forecast.getFirstLight(dates.get(i));
             if(firstLight == null){

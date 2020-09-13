@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    style="@styles/"
+    >
+    <stroke
+        android:width="4dp"
+        android:color="@color/white" />
+    <solid
+        android:color="@color/darkGrey" />
+    <corners android:radius="12dp" /> <!-- remove line to get sharp corners -->
+</shape>

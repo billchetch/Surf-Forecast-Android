@@ -7,16 +7,14 @@ import android.graphics.Rect;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.os.Handler;
-import android.support.constraint.ConstraintLayout;
-import android.support.v4.app.Fragment;
+
+import androidx.fragment.app.Fragment;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.FrameLayout;
 import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
-import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.ImageView;
 import android.view.View.OnClickListener;
@@ -508,7 +506,7 @@ public class SurfConditionsOverviewFragment extends Fragment implements OnClickL
 
                     if(scrollIntoView && i == 0) {
                         sv.post(() -> {
-                            sv.smoothScrollTo(gv.xNow > 48 ? gv.xNow - 48 : 0, 0);
+                            sv.smoothScrollTo(gv.xNow > 100 ? gv.xNow - 100 : 0, 0);
                         });
                     }
                 }

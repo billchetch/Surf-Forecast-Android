@@ -1,1 +1,5 @@
-include ':app', ':appresources', ':utilities', ':webservices', ':appframework'
+include ':webservices'
+include ':appresources'
+include ':appframework'
+include ':utilities'
+include ':app'
