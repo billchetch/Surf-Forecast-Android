@@ -13,9 +13,11 @@ import com.bulan_baru.surf_forecast.data.Locations;
 import com.bulan_baru.surf_forecast.data.SurfForecastRepository;
 
 import net.chetch.webservices.DataStore;
+import net.chetch.webservices.WebserviceRepository;
 import net.chetch.webservices.WebserviceViewModel;
 import net.chetch.webservices.gps.GPSPosition;
 import net.chetch.webservices.gps.GPSRepository;
+import net.chetch.webservices.network.Service;
 
 import java.util.Calendar;
 
@@ -62,6 +64,12 @@ public class MainViewModel extends WebserviceViewModel {
             locationIDMap = locations.asIDMap();
         });
 
+    }
+
+    @Override
+    protected void configureRepoService(WebserviceRepository<?> repo, Service service) throws Exception {
+        Log.i("MVM", "Set service " + service.getValue("service_name") + " to " + service.getLocalEndpoint());
+        super.configureRepoService(repo, service);
     }
 
     @Override

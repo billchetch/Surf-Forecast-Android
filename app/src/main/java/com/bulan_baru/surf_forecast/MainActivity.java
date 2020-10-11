@@ -110,7 +110,7 @@ public class MainActivity extends net.chetch.appframework.GenericActivity  imple
 
         Configuration configuration = getResources().getConfiguration();
         Log.i(LOG_TAG, "Metrics of width, smallest width, height: " + configuration.screenWidthDp + "," + configuration.smallestScreenWidthDp + "," + configuration.screenHeightDp);
-        Log.i(LOG_TAG, "Creating main activity or device " + DISPLAY_TYPE);
+        Log.i(LOG_TAG, "Creating main activity for device " + DISPLAY_TYPE);
 
         //set up some generic stuff
         includeActionBar(SettingsActivity.class);

@@ -53,9 +53,6 @@ public class SurfForecastApplication extends ChetchApplication {
         //String androidID = Settings.Secure.getString(this.getContentResolver(), Settings.Secure.ANDROID_ID);
 
         try {
-            //set network
-            setDeviceNetwork();
-
             //set default prefs and API Base URL
             PreferenceManager.setDefaultValues(this, R.xml.preferences, true);
             SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
@@ -73,18 +70,6 @@ public class SurfForecastApplication extends ChetchApplication {
             SurfForecastRepository.getInstance().setMaxDistance(maxDistance);
 
             restartAfter = sharedPref.getInt("restart_app_after", 12);
-
-
-            //add a network change listener to handle network state changes
-            IntentFilter intentFilter = new IntentFilter();
-            intentFilter.addAction(WifiManager.NETWORK_STATE_CHANGED_ACTION);
-            registerReceiver(new BroadcastReceiver() {
-                @Override
-                public void onReceive(Context context, Intent intent) {
-                    setDeviceNetwork();
-                }
-            }, intentFilter);
-
 
             //fire up timer
             timerHandler.postDelayed(timerRunnable, TIMER_DELAY_IN_MILLIS);
@@ -125,17 +110,4 @@ public class SurfForecastApplication extends ChetchApplication {
         Logger.info("Restarting app in " + delayInSecs + " seconds");
         System.exit(0);
     }
-
-    protected void setDeviceNetwork(){
-        Context context = getApplicationContext();
-
-        Log.i("SFA", "setDeviceNetwork");
-        WifiManager wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
-        WifiInfo wifiInfo = wifiManager.getConnectionInfo();
-        if (wifiInfo != null) {
-            //repositoryComponent.getRepository().getClientDevice().setDeviceNetwork(wifiInfo.getSSID());
-        }
-    }
-
-
 }
