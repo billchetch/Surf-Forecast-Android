@@ -1,5 +1,13 @@
 include ':webservices'
+project(':webservices').projectDir=new File('/Users/billthorgerson/Documents/AndroidStudioProjects/WebservicesTest/webservices')
+
 include ':appresources'
+project(':appresources').projectDir=new File('/Users/billthorgerson/Documents/AndroidStudioProjects/AppResourcesLib/appresources')
+
 include ':appframework'
+project(':appframework').projectDir=new File('/Users/billthorgerson/Documents/AndroidStudioProjects/AppFrameworkLib/appframework')
+
 include ':utilities'
+project(':utilities').projectDir=new File('/Users/billthorgerson/Documents/AndroidStudioProjects/Utils/utilities')
+
 include ':app'

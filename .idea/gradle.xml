@@ -9,15 +9,16 @@
         <option name="externalProjectPath" value="$PROJECT_DIR$" />
         <option name="modules">
           <set>
+            <option value="$PROJECT_DIR$/../AppFrameworkLib/appframework" />
+            <option value="$PROJECT_DIR$/../AppResourcesLib/appresources" />
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/app" />
-            <option value="$PROJECT_DIR$/appframework" />
-            <option value="$PROJECT_DIR$/appresources" />
-            <option value="$PROJECT_DIR$/utilities" />
-            <option value="$PROJECT_DIR$/webservices" />
+            <option value="$PROJECT_DIR$/../Utils/utilities" />
+            <option value="$PROJECT_DIR$/../WebservicesTest/webservices" />
           </set>
         </option>
         <option name="resolveModulePerSourceSet" value="false" />
+        <option name="useQualifiedModuleNames" value="true" />
       </GradleProjectSettings>
     </option>
   </component>

@@ -82,8 +82,13 @@ public class MainViewModel extends WebserviceViewModel {
 
     @Override
     public DataStore loadData(Observer observer){
-        DataStore<?> dataStore = super.loadData(observer);
-        return dataStore;
+        try {
+            DataStore<?> dataStore = super.loadData(observer);
+            return dataStore;
+        } catch (Exception e){
+            Log.e("MVM", e.getMessage());
+            return null;
+        }
     }
 
 
