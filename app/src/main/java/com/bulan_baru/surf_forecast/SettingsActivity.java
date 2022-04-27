@@ -50,5 +50,11 @@ public class SettingsActivity extends SettingsActivityBase implements SharedPref
             MainViewModel.AUTO_BRIGHTNESS = autoBrightness;
             restartMainActivityOnFinish = true;
         }
+
+        if(key.equals("suppress_errors")){
+            boolean suppressErrors = sharedPreferences.getBoolean(key, false);
+            MainViewModel.SUPPRESS_ERRORS = suppressErrors;
+            restartMainActivityOnFinish = true;
+        }
     }
 }

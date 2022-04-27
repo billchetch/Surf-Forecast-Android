@@ -25,6 +25,7 @@ import java.util.Calendar;
 public class MainViewModel extends WebserviceViewModel {
     static public boolean USE_DEVICE_LOCATION = false;
     static public boolean AUTO_BRIGHTNESS = false;
+    static public boolean SUPPRESS_ERRORS = false;
 
     SurfForecastRepository surfForecastRepository = SurfForecastRepository.getInstance();
     GPSRepository gpsRepository = GPSRepository.getInstance();
@@ -81,14 +82,9 @@ public class MainViewModel extends WebserviceViewModel {
     }
 
     @Override
-    public DataStore loadData(Observer observer){
-        try {
-            DataStore<?> dataStore = super.loadData(observer);
-            return dataStore;
-        } catch (Exception e){
-            Log.e("MVM", e.getMessage());
-            return null;
-        }
+    public DataStore loadData(Observer observer) throws Exception{
+        DataStore<?> dataStore = super.loadData(observer);
+        return dataStore;
     }
 
 
@@ -148,5 +144,7 @@ public class MainViewModel extends WebserviceViewModel {
     /*public LiveData<Forecast> getForecast(int locationID){
         return surfForecastRepository.getForecast(locationID);
     }*/
+
+
 
 }

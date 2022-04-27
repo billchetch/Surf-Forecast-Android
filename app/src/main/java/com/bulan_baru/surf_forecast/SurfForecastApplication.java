@@ -66,6 +66,9 @@ public class SurfForecastApplication extends ChetchApplication {
             boolean autoBrightness = sharedPref.getBoolean("automatic_brightness", false);
             MainViewModel.AUTO_BRIGHTNESS = autoBrightness;
 
+            boolean suppressErrors = sharedPref.getBoolean("suppress_errors", false);
+            MainViewModel.SUPPRESS_ERRORS = suppressErrors;
+
             float maxDistance = sharedPref.getFloat("max_distance", -1);
             SurfForecastRepository.getInstance().setMaxDistance(maxDistance);
 
@@ -82,7 +85,7 @@ public class SurfForecastApplication extends ChetchApplication {
     protected void onTimer(){
         //check how long we've been running for and restart if more than a given time
 
-        if(restartAfter < 0)return;
+        if(restartAfter <= 0)return;
         long h = Utils.hoursDiff(Calendar.getInstance(), appStarted);
         if(h >= restartAfter){
             Logger.info("Application has been running for " + h + " hours so restarting");

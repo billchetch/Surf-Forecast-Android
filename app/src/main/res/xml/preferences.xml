@@ -27,4 +27,10 @@
         android:title="Automatically dim device depending on time of day"
         android:summary="Use if auto sensing brighness is not working well enough"
         android:defaultValue="false"/>
+
+    <CheckBoxPreference
+        android:key="suppress_errors"
+        android:title="Suppress Errors"
+        android:summary="Where possible don't show error alerts"
+        android:defaultValue="false"/>
 </PreferenceScreen>
