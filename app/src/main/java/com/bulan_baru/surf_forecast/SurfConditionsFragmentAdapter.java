@@ -9,6 +9,8 @@ import android.util.Log;
 
 import com.bulan_baru.surf_forecast.data.Forecast;
 import com.bulan_baru.surf_forecast.data.ForecastHour;
+
+import net.chetch.utilities.SLog;
 import net.chetch.utilities.Utils;
 
 import java.util.ArrayList;
@@ -113,7 +115,7 @@ public class SurfConditionsFragmentAdapter extends FragmentPagerAdapter {
 
     @Override
     public long getItemId(int position){
-        Log.i("SCFA", "getItemId");
+        if(SLog.LOG) SLog.i("SCFA", "getItemId");
         Calendar cal = dates.get(position);
         long mins = (cal.getTimeInMillis() - baseTimeForId)/60000;
         mins *= 10000000;

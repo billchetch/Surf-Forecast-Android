@@ -5,10 +5,12 @@ import android.util.Log;
 
 import com.bulan_baru.surf_forecast.services.LocationService;
 
+import net.chetch.utilities.SLog;
+
 public class SFLocationService extends LocationService {
     @Override
     protected void handleServiceError(int errorType, Throwable t){
-        Log.e("SFLS", t.getMessage());
+        if(SLog.LOG) SLog.e("SFLS", t.getMessage());
         Intent intent = new Intent();
         intent.setAction(ACTION_LOCATION_SERVICE_ERROR);
         intent.putExtra(ERROR_TYPE_KEY, errorType);

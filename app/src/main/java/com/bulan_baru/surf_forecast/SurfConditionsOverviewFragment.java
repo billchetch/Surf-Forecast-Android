@@ -26,6 +26,7 @@ import com.bulan_baru.surf_forecast.data.ForecastDay;
 import com.bulan_baru.surf_forecast.data.ForecastDetail;
 import com.bulan_baru.surf_forecast.data.ForecastHour;
 
+import net.chetch.utilities.SLog;
 import net.chetch.utilities.Utils;
 
 import java.util.Calendar;
@@ -57,7 +58,7 @@ public class SurfConditionsOverviewFragment extends Fragment implements OnClickL
     };
 
     protected void onTimer(){
-        Log.i("SCOF TIMER", "timer");
+        if(SLog.LOG) SLog.i("SCOF TIMER", "timer");
 
         if(expanded){
             if(MainActivity.DISPLAY_TYPE == MainActivity.DisplayType.TABLET) {
@@ -264,7 +265,7 @@ public class SurfConditionsOverviewFragment extends Fragment implements OnClickL
                     double y = segment.getY(xInMillis) + segment.normalisedBy;
                     yPos =  (int)(graphRect.bottom - (yScale2Points * y));
                 } catch (Exception e){
-                    Log.e("GRAPHVIEW", e.getMessage());
+                    if(SLog.LOG)SLog.e("GRAPHVIEW", e.getMessage());
                     continue;
                 }
 

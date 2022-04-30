@@ -24,6 +24,8 @@ import androidx.core.content.ContextCompat;
 import android.util.Log;
 
 import com.bulan_baru.surf_forecast.R;
+
+import net.chetch.utilities.SLog;
 //import com.bulan_baru.surf_forecast.data.ClientDevice;
 
 
@@ -65,7 +67,7 @@ abstract public class LocationService extends Service {
 
 
     public LocationService(){
-        Log.i("LS", "Constructed");
+        if(SLog.LOG)SLog.i("LS", "Constructed");
     }
 
     @Override
@@ -94,7 +96,7 @@ abstract public class LocationService extends Service {
     }
 
     public int onStartCommand(Intent intent, int flags, int startId) {
-        Log.i("LS", "Start service wtih ID " + startId);
+        if(SLog.LOG)SLog.i("LS", "Start service wtih ID " + startId);
 
         try {
             String ssid = intent.getStringExtra(NETWORK_SSID);
@@ -105,7 +107,7 @@ abstract public class LocationService extends Service {
             }
             if (ssid == null) {
                 handleNetworkSSIDRequest();
-                Log.i("LS", "No API Base URL found");
+                if(SLog.LOG)SLog.i("LS", "No API Base URL found");
                 return START_STICKY;
             }
             //repository.getClientDevice().setDeviceNetwork(ssid);
@@ -113,7 +115,7 @@ abstract public class LocationService extends Service {
 
             if (requiresUserPermission()) {
                 handlePermissionRequest();
-                Log.i("LS", "Permission is not granted");
+                if(SLog.LOG)SLog.i("LS", "Permission is not granted");
                 return START_STICKY;
             }
 
@@ -124,7 +126,7 @@ abstract public class LocationService extends Service {
             }
             if (apiBaseURL == null) {
                 handleAPIBaseURLRequest();
-                Log.i("LS", "No API Base URL found");
+                if(SLog.LOG)SLog.i("LS", "No API Base URL found");
                 return START_STICKY;
             }
             //repository.getServiceManager().setApiBaseURL(apiBaseURL);
@@ -186,20 +188,20 @@ abstract public class LocationService extends Service {
                 if(location != null) {
                     //repository.updateDeviceLocation(location);
                     currentLocation = location;
-                    Log.i("LS", "location updated by device " + location.getLongitude() + "/" + location.getLatitude());
+                    if(SLog.LOG)SLog.i("LS", "location updated by device " + location.getLongitude() + "/" + location.getLatitude());
                 }
             }
 
             public void onStatusChanged(String provider, int status, Bundle extras) {
-                Log.i("LS", provider + " has status " + status);
+                if(SLog.LOG)SLog.i("LS", provider + " has status " + status);
             }
 
             public void onProviderEnabled(String provider) {
-                Log.i("LS", provider + " enabled");
+                if(SLog.LOG)SLog.i("LS", provider + " enabled");
             }
 
             public void onProviderDisabled(String provider) {
-                Log.i("LS", provider + " disabled");
+                if(SLog.LOG)SLog.i("LS", provider + " disabled");
             }
         };
 
@@ -207,7 +209,7 @@ abstract public class LocationService extends Service {
         minDistance = DEFAULT_MIN_DISTANCE;
         //locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, TimeUnit.SECONDS.toMillis(minTime), minDistance, locationListener);
 
-        Log.i("LS", "Requested location updates");
+        if(SLog.LOG)SLog.i("LS", "Requested location updates");
     }
 
     protected void stopListeningForLocationUpdates(){
@@ -230,7 +232,7 @@ abstract public class LocationService extends Service {
 
         sendBroadcast(intent);
 
-        //Log.i("LS", "Device Location Updated " + clientDevice.getLongitude() + "/" + clientDevice.getLatitude());
+        //if(SLog.LOG)SLog.i("LS", "Device Location Updated " + clientDevice.getLongitude() + "/" + clientDevice.getLatitude());
     } */
 
     @Override
@@ -242,6 +244,6 @@ abstract public class LocationService extends Service {
     @Override
     public void onDestroy() {
         stopListeningForLocationUpdates();
-        Log.i("LS", "Service destroyed");
+        if(SLog.LOG)SLog.i("LS", "Service destroyed");
     }
 }

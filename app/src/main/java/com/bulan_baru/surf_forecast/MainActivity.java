@@ -35,6 +35,7 @@ import net.chetch.appframework.ErrorDialogFragment;
 import net.chetch.appframework.GenericDialogFragment;
 import net.chetch.appframework.IDialogManager;
 import net.chetch.utilities.Logger;
+import net.chetch.utilities.SLog;
 import net.chetch.utilities.Spinner2;
 import net.chetch.utilities.Utils;
 import net.chetch.webservices.WebserviceViewModel;
@@ -59,7 +60,7 @@ public class MainActivity extends net.chetch.appframework.GenericActivity  imple
         String progressInfo = state + " " + progress.info.toLowerCase();
         setProgressInfo(progressInfo);
 
-        Log.i("Main", "load observer " + state + " " + progress.info);
+        if(SLog.LOG) SLog.i("Main", "load observer " + state + " " + progress.info);
     };
 
     private LocationDialogFragment locationDialog;
@@ -114,8 +115,8 @@ public class MainActivity extends net.chetch.appframework.GenericActivity  imple
             DISPLAY_TYPE = DisplayType.valueOf(getString(R.string.display_type));
 
             Configuration configuration = getResources().getConfiguration();
-            Log.i(LOG_TAG, "Metrics of width, smallest width, height: " + configuration.screenWidthDp + "," + configuration.smallestScreenWidthDp + "," + configuration.screenHeightDp);
-            Log.i(LOG_TAG, "Creating main activity for device " + DISPLAY_TYPE);
+            if(SLog.LOG)SLog.i(LOG_TAG, "Metrics of width, smallest width, height: " + configuration.screenWidthDp + "," + configuration.smallestScreenWidthDp + "," + configuration.screenHeightDp);
+            if(SLog.LOG)SLog.i(LOG_TAG, "Creating main activity for device " + DISPLAY_TYPE);
 
             //set up some generic stuff
             includeActionBar(SettingsActivity.class);
@@ -155,9 +156,9 @@ public class MainActivity extends net.chetch.appframework.GenericActivity  imple
         viewModel.getError().observe(this, t ->{
             if(t != null) {
                 showError(t);
-                Log.e("Main", "Error: " + t.getMessage());
+                if(SLog.LOG)SLog.e("Main", "Error: " + t.getMessage());
             } else {
-                Log.e("Main", "MainActivity observe error update with null");
+                if(SLog.LOG)SLog.e("Main", "MainActivity observe error update with null");
             }
         });
 
@@ -184,15 +185,15 @@ public class MainActivity extends net.chetch.appframework.GenericActivity  imple
                         }
                     } catch (SettingNotFoundException ex) {
                         //just don't set the brightness (cos not that important)
-                        Log.e(LOG_TAG, ex.getMessage());
+                        if(SLog.LOG)SLog.e(LOG_TAG, ex.getMessage());
                     } catch (Exception ex) {
-                        Log.e(LOG_TAG, ex.getMessage());
+                        if(SLog.LOG)SLog.e(LOG_TAG, ex.getMessage());
                     }
                 } //end auto brigthness
 
                 //check for a pause in requesting location list updates
                 if (pauseLocationUpdates != null && Utils.dateDiff(Calendar.getInstance(), pauseLocationUpdates, TimeUnit.SECONDS) < 30) {
-                    Log.i(LOG_TAG, "Location updates paused");
+                    if(SLog.LOG)SLog.i(LOG_TAG, "Location updates paused");
                     return;
                 }
 
@@ -208,18 +209,18 @@ public class MainActivity extends net.chetch.appframework.GenericActivity  imple
                 float distance = lastGPSPosition == null ? -1 : lastGPSPosition.distanceTo(currentPos);
                 if (lastGPSPosition == null || distance > 500 || Utils.dateDiff(Calendar.getInstance(), lastGPSPositionUpdated, TimeUnit.SECONDS) > 5 * 60) {
                     if (lastGPSPosition != null)
-                        Log.i(LOG_TAG, "Location changed " + distance + " meters since " + Utils.dateDiff(Calendar.getInstance(), lastGPSPositionUpdated, TimeUnit.SECONDS) + " seconds ago");
+                        if(SLog.LOG)SLog.i(LOG_TAG, "Location changed " + distance + " meters since " + Utils.dateDiff(Calendar.getInstance(), lastGPSPositionUpdated, TimeUnit.SECONDS) + " seconds ago");
                     lastGPSPosition = currentPos;
                     lastGPSPositionUpdated = Calendar.getInstance();
                 } else if (pauseLocationUpdates == null) {
-                    Log.i(LOG_TAG, "Location not significantly updated ... distance traveled " + distance + " meters since " + Utils.dateDiff(Calendar.getInstance(), lastGPSPositionUpdated, TimeUnit.SECONDS) + " seconds ago");
+                    if(SLog.LOG)SLog.i(LOG_TAG, "Location not significantly updated ... distance traveled " + distance + " meters since " + Utils.dateDiff(Calendar.getInstance(), lastGPSPositionUpdated, TimeUnit.SECONDS) + " seconds ago");
                     return;
                 }
 
                 //by here we know we should request the list of nearby locations
                 viewModel.getLocationsNearby(currentPos);
             } catch (Exception e){
-                Log.e("Main", e.getMessage());
+                if(SLog.LOG)SLog.e("Main", e.getMessage());
                 showError(0, e.getMessage());
             }
         });
@@ -232,7 +233,7 @@ public class MainActivity extends net.chetch.appframework.GenericActivity  imple
             }
 
             //now fill in the locations
-            Log.i(LOG_TAG,"Retrieved " + locations.size() + " locations from server");
+            if(SLog.LOG)SLog.i(LOG_TAG,"Retrieved " + locations.size() + " locations from server");
             if(locations.size() == 0)return;
 
             Spinner2 locationsSpinnner = findViewById(R.id.surfLocation);
@@ -254,14 +255,14 @@ public class MainActivity extends net.chetch.appframework.GenericActivity  imple
                             Location selectedLocation = locations.get(position);
                             if (selectedLocation.getLastFeedRunID() == 0) {
                                 showError(0, "Location " + selectedLocation.getLocation() + " does not have a forecast");
-                                Log.e(LOG_TAG, "Location " + selectedLocation.getLocation() + " does not have a forecast");
+                                if(SLog.LOG)SLog.e(LOG_TAG, "Location " + selectedLocation.getLocation() + " does not have a forecast");
                                 return;
                             }
 
                             boolean forecastHasChanged = currentForecast == null || (currentForecast.getFeedRunID() != selectedLocation.getLastFeedRunID()) || currentForecast.getLocationID() != selectedLocation.getID();
                             long secsSinceForecastRetrieved = forecastLastRetrieved == null ? -1 : Utils.dateDiff(Calendar.getInstance(), forecastLastRetrieved, TimeUnit.SECONDS);
                             if (forecastHasChanged || secsSinceForecastRetrieved > 60 * 60) {
-                                Log.i(LOG_TAG, "Retrieving forecast because " + (forecastHasChanged ? "it has changed" : "last retrieved " + secsSinceForecastRetrieved + " secs ago"));
+                                if(SLog.LOG)SLog.i(LOG_TAG, "Retrieving forecast because " + (forecastHasChanged ? "it has changed" : "last retrieved " + secsSinceForecastRetrieved + " secs ago"));
                                 setPauseLocationUpdates(true);
                                 showProgress();
                                 hideSurfConditions();
@@ -270,7 +271,7 @@ public class MainActivity extends net.chetch.appframework.GenericActivity  imple
                                 setPauseLocationUpdates(false);
                                 if (Utils.dateDiff(Calendar.getInstance(), forecastLastDisplayed, TimeUnit.SECONDS) > 10 * 60) {
                                     showForecast(currentForecast); //this is to allow for time updates
-                                    Log.i(LOG_TAG, "Re-showing forecast to allow for time changes");
+                                    if(SLog.LOG)SLog.i(LOG_TAG, "Re-showing forecast to allow for time changes");
                                 }
                             }
                         }
@@ -293,7 +294,7 @@ public class MainActivity extends net.chetch.appframework.GenericActivity  imple
         });
 
         Logger.info("Main activity created with: use_device_location=" + MainViewModel.USE_DEVICE_LOCATION + ", auto_brightness=" + MainViewModel.AUTO_BRIGHTNESS + " and display type=" + DISPLAY_TYPE);
-        Log.i(LOG_TAG, "onCreate ended");
+        if(SLog.LOG)SLog.i(LOG_TAG, "onCreate ended");
 
         //start loading in data
         showProgress();
@@ -307,7 +308,7 @@ public class MainActivity extends net.chetch.appframework.GenericActivity  imple
             if(errMsg == null){
                 errMsg = e.getClass().toString() + " did not have an error message";
             }
-            Log.e("Main", errMsg);
+            if(SLog.LOG)SLog.e("Main", errMsg);
         }
 
 
@@ -362,10 +363,10 @@ public class MainActivity extends net.chetch.appframework.GenericActivity  imple
                 }
             }
 
-            Log.i(LOG_TAG, "Started using device location");
+            if(SLog.LOG)SLog.i(LOG_TAG, "Started using device location");
             startTimer(2);
         } else {
-            Log.i(LOG_TAG, "Started using server GPS");
+            if(SLog.LOG)SLog.i(LOG_TAG, "Started using server GPS");
             viewModel.getLatestGPSPosition();
             startTimer(30);
         }
@@ -495,7 +496,7 @@ public class MainActivity extends net.chetch.appframework.GenericActivity  imple
                     showError(e);
                 }
             }
-            Log.i(LOG_TAG, "Error dialog onDialogPositiveClick");
+            if(SLog.LOG)SLog.i(LOG_TAG, "Error dialog onDialogPositiveClick");
         }
     }
 
@@ -528,12 +529,12 @@ public class MainActivity extends net.chetch.appframework.GenericActivity  imple
 
     private void setPauseLocationUpdates(boolean pause){
         pauseLocationUpdates = pause ? Calendar.getInstance() : null;
-        Log.i(LOG_TAG, pause ? "Location updates paused" : "Location updates resumed");
+        if(SLog.LOG)SLog.i(LOG_TAG, pause ? "Location updates paused" : "Location updates resumed");
     }
 
 
     public void openLocationInfo(Location location){
-        Log.i(LOG_TAG, "Open location info");
+        if(SLog.LOG)SLog.i(LOG_TAG, "Open location info");
         locationDialog = new LocationDialogFragment();
         locationDialog.location = location;
         locationDialog.show(getSupportFragmentManager(), "LocationDialog");

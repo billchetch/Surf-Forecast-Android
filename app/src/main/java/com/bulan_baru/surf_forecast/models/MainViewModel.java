@@ -12,6 +12,7 @@ import com.bulan_baru.surf_forecast.data.PositionInfo;
 import com.bulan_baru.surf_forecast.data.Locations;
 import com.bulan_baru.surf_forecast.data.SurfForecastRepository;
 
+import net.chetch.utilities.SLog;
 import net.chetch.webservices.DataStore;
 import net.chetch.webservices.WebserviceRepository;
 import net.chetch.webservices.WebserviceViewModel;
@@ -69,7 +70,7 @@ public class MainViewModel extends WebserviceViewModel {
 
     @Override
     protected void configureRepoService(WebserviceRepository<?> repo, Service service) throws Exception {
-        Log.i("MVM", "Set service " + service.getValue("service_name") + " to " + service.getLocalEndpoint());
+        if(SLog.LOG) SLog.i("MVM", "Set service " + service.getValue("service_name") + " to " + service.getLocalEndpoint());
         super.configureRepoService(repo, service);
     }
 
@@ -77,7 +78,7 @@ public class MainViewModel extends WebserviceViewModel {
     protected ServerTimeDisparityOptions getServerTimeDisparityOption(long serverTimeDifference) {
         ServerTimeDisparityOptions defaultOption = super.getServerTimeDisparityOption(serverTimeDifference);
 
-        Log.i("MVM", "Server time difference exceeding " + permissableServerTimeDifference);
+        if(SLog.LOG)SLog.i("MVM", "Server time difference exceeding " + permissableServerTimeDifference);
         return defaultOption;
     }
 

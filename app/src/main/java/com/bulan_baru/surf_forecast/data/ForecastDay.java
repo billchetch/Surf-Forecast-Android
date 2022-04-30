@@ -4,6 +4,7 @@ import android.util.Log;
 
 import com.google.gson.annotations.SerializedName;
 
+import net.chetch.utilities.SLog;
 import net.chetch.utilities.Utils;
 import net.chetch.webservices.Webservice;
 
@@ -83,7 +84,7 @@ public class ForecastDay extends ForecastDetail {
                 td.time.setTimeZone(getTimeZone());
                 tideData.add(td);
             } catch (Exception e){
-                Log.e("ForecastDay", e.getMessage());
+                if(SLog.LOG) SLog.e("ForecastDay", e.getMessage());
             }
         }
         return tideData;

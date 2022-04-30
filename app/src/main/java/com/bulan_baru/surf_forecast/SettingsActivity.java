@@ -10,6 +10,7 @@ import android.util.Log;
 import com.bulan_baru.surf_forecast.data.SurfForecastRepository;
 import com.bulan_baru.surf_forecast.models.MainViewModel;
 import net.chetch.appframework.SettingsActivityBase;
+import net.chetch.utilities.SLog;
 import net.chetch.webservices.network.NetworkRepository;
 
 public class SettingsActivity extends SettingsActivityBase implements SharedPreferences.OnSharedPreferenceChangeListener{
@@ -25,7 +26,7 @@ public class SettingsActivity extends SettingsActivityBase implements SharedPref
                 String apiBaseURL = sharedPreferences.getString(key, null);
                 NetworkRepository.getInstance().setAPIBaseURL(apiBaseURL);
             } catch (Exception e){
-                Log.e("Settings", e.getMessage());
+                if(SLog.LOG)SLog.e("Settings", e.getMessage());
             }
         }
 

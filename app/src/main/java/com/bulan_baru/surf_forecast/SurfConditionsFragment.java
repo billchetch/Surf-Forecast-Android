@@ -13,6 +13,7 @@ import com.bulan_baru.surf_forecast.data.Forecast;
 import com.bulan_baru.surf_forecast.data.ForecastDay;
 import com.bulan_baru.surf_forecast.data.ForecastHour;
 
+import net.chetch.utilities.SLog;
 import net.chetch.utilities.Utils;
 
 import java.util.List;
@@ -164,7 +165,7 @@ public class SurfConditionsFragment extends Fragment {
 
                 surfConditionsLayout.addView(sc);
             } catch (Exception e){ //currently just don't add the information if there is an exception (normally NULL pointer exception)
-                Log.e(LOG_TAG, e.getMessage() == null ? "NULL" : e.getMessage());
+                if(SLog.LOG) SLog.e(LOG_TAG, e.getMessage() == null ? "NULL" : e.getMessage());
             }
         }
 

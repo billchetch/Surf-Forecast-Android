@@ -20,6 +20,7 @@ import com.bulan_baru.surf_forecast.services.SFLocationService;
 
 import net.chetch.appframework.ChetchApplication;
 import net.chetch.utilities.Logger;
+import net.chetch.utilities.SLog;
 import net.chetch.utilities.Utils;
 import net.chetch.webservices.network.NetworkRepository;
 
@@ -47,6 +48,7 @@ public class SurfForecastApplication extends ChetchApplication {
     public void onCreate() {
         uncaughtExceptionHandler = null; //use the default one
         LOG_FILE = "bbsf.log";
+        SLog.LOG = true; //set to false to turn off all logging to output window
         super.onCreate();
 
         //set client device info
@@ -57,7 +59,7 @@ public class SurfForecastApplication extends ChetchApplication {
             PreferenceManager.setDefaultValues(this, R.xml.preferences, true);
             SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
             String apiBaseURL = sharedPref.getString("api_base_url", null);
-            Log.i("Application", "Services API URL: " + apiBaseURL);
+            if(SLog.LOG) SLog.i("Application", "Services API URL: " + apiBaseURL);
             NetworkRepository.getInstance().setAPIBaseURL(apiBaseURL);
 
             boolean useDeviceLocation = sharedPref.getBoolean("use_device_location", true);
@@ -78,7 +80,7 @@ public class SurfForecastApplication extends ChetchApplication {
             timerHandler.postDelayed(timerRunnable, TIMER_DELAY_IN_MILLIS);
             appStarted = Calendar.getInstance();
         } catch (Exception e){
-            Log.e("Application", e.getMessage());
+            if(SLog.LOG)SLog.e("Application", e.getMessage());
         }
     }
 
