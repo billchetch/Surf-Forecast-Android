@@ -4,6 +4,7 @@
         <domain includeSubdomains="true">10.0.2.2</domain>
         <domain includeSubdomains="true">www.bulan-baru.com</domain>
         <domain includeSubdomains="true">sf.bulan-baru.com</domain>
+        <domain includeSubdomains="true">192.168.1.106</domain>
         <domain includeSubdomains="true">192.168.43.123</domain>
         <domain includeSubdomains="true">192.168.0.106</domain>
         <domain includeSubdomains="true">192.168.0.52</domain>

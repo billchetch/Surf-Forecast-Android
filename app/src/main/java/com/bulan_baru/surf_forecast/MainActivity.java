@@ -2,11 +2,14 @@ package com.bulan_baru.surf_forecast;
 
 import android.Manifest;
 
+import androidx.lifecycle.LiveData;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProviders;
+
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
+import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -14,12 +17,13 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
+
+import com.bulan_baru.surf_forecast.data.Locations;
 import com.google.android.material.tabs.TabLayout;
+
 import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
 import androidx.viewpager.widget.ViewPager;
 
-import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -48,26 +52,27 @@ import java.util.List;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
-public class MainActivity extends net.chetch.appframework.GenericActivity  implements IDialogManager {
+public class MainActivity extends net.chetch.appframework.GenericActivity implements IDialogManager {
     private static final String LOG_TAG = "Main";
     private static final int REQUEST_LOCATION_PERMISSION = 1;
     private static final int REQUEST_WRITE_PERMISSION = 2;
 
     MainViewModel viewModel;
-    Observer dataLoadProgress  = obj -> {
-        WebserviceViewModel.LoadProgress progress = (WebserviceViewModel.LoadProgress)obj;
+    Observer dataLoadProgress = obj -> {
+        WebserviceViewModel.LoadProgress progress = (WebserviceViewModel.LoadProgress) obj;
         String state = progress.startedLoading ? "Loading" : "Loaded";
-        String progressInfo = state + " " + progress.info.toLowerCase();
+        String progressInfo = state + " " + (progress.info == null ? "" : progress.info.toLowerCase());
         setProgressInfo(progressInfo);
 
-        if(SLog.LOG) SLog.i("Main", "load observer " + state + " " + progress.info);
+        if (SLog.LOG) SLog.i("Main", "load observer " + state + " " + progress.info);
     };
 
-    private LocationDialogFragment locationDialog;
+    private LocationsDialogFragment locationsDialog;
     private LocationListener locationListener;
     private android.location.Location currentDeviceLocation;
     private GPSPosition lastGPSPosition = null;
     private Calendar lastGPSPositionUpdated = null;
+    private Location currentLocation = null;
     private Forecast currentForecast = null;
     private SurfConditionsFragmentAdapter surfConditionsAdapter;
     private Calendar forecastLastDisplayed;
@@ -75,7 +80,7 @@ public class MainActivity extends net.chetch.appframework.GenericActivity  imple
     private Calendar pauseLocationUpdates;
     private int currentConditionsPage = -1;
 
-    public enum DisplayType{
+    public enum DisplayType {
         HAND_PHONE,
         TABLET
     }
@@ -88,12 +93,12 @@ public class MainActivity extends net.chetch.appframework.GenericActivity  imple
         setContentView(R.layout.activity_main);
 
         //do permissions first cos these require a restart
-        if(MainViewModel.USE_DEVICE_LOCATION && !permissionGranted(Manifest.permission.ACCESS_FINE_LOCATION)){
+        if (MainViewModel.USE_DEVICE_LOCATION && !permissionGranted(Manifest.permission.ACCESS_FINE_LOCATION)) {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_LOCATION_PERMISSION);
             return;
         }
 
-        if(MainViewModel.AUTO_BRIGHTNESS){
+        if (MainViewModel.AUTO_BRIGHTNESS) {
             try {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                     if (!Settings.System.canWrite(getApplicationContext())) {
@@ -106,7 +111,7 @@ public class MainActivity extends net.chetch.appframework.GenericActivity  imple
                     ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_SETTINGS}, REQUEST_WRITE_PERMISSION);
                     return;
                 }
-            } catch (Exception e){
+            } catch (Exception e) {
                 showError(0, "Error setting auto brigthness: " + e.getMessage());
             }
         }
@@ -115,8 +120,9 @@ public class MainActivity extends net.chetch.appframework.GenericActivity  imple
             DISPLAY_TYPE = DisplayType.valueOf(getString(R.string.display_type));
 
             Configuration configuration = getResources().getConfiguration();
-            if(SLog.LOG)SLog.i(LOG_TAG, "Metrics of width, smallest width, height: " + configuration.screenWidthDp + "," + configuration.smallestScreenWidthDp + "," + configuration.screenHeightDp);
-            if(SLog.LOG)SLog.i(LOG_TAG, "Creating main activity for device " + DISPLAY_TYPE);
+            if (SLog.LOG)
+                SLog.i(LOG_TAG, "Metrics of width, smallest width, height: " + configuration.screenWidthDp + "," + configuration.smallestScreenWidthDp + "," + configuration.screenHeightDp);
+            if (SLog.LOG) SLog.i(LOG_TAG, "Creating main activity for device " + DISPLAY_TYPE);
 
             //set up some generic stuff
             includeActionBar(SettingsActivity.class);
@@ -127,24 +133,22 @@ public class MainActivity extends net.chetch.appframework.GenericActivity  imple
                 setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
             } else {
                 setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-                View forecastInfoText = findViewById(R.id.forecastInfo);
-                forecastInfoText.setOnClickListener(view -> {
-                    ((Spinner2) findViewById(R.id.surfLocation)).performClick();
-                });
             }
-        } catch(Exception e) {
+        } catch (Exception e) {
             showError(0, "Error setting orientation: " + e.getMessage());
         }
 
         hideSurfConditions();
         hideProgress();
 
-        View locationInfoBtn = findViewById(DISPLAY_TYPE == DisplayType.TABLET ? R.id.locationInfo : R.id.logo);
-        locationInfoBtn.setOnClickListener(view -> {
-            if(currentForecast == null)return;
-            Location loc = viewModel.getLocation(currentForecast.getLocationID());
-            if(loc != null){
-                openLocationInfo(loc);
+        TextView locationTitle = findViewById(R.id.surfLocationTitle);
+
+        locationTitle.setOnClickListener(view -> {
+            if (currentForecast == null) return;
+
+            LiveData<Locations> liveData = viewModel.getLocationsNearby();
+            if(liveData.getValue() != null){
+                openLocationsDialog(liveData.getValue());
             }
         });
 
@@ -153,18 +157,18 @@ public class MainActivity extends net.chetch.appframework.GenericActivity  imple
         viewModel = ViewModelProviders.of(this).get(MainViewModel.class);
 
         //observe errors
-        viewModel.getError().observe(this, t ->{
-            if(t != null) {
+        viewModel.getError().observe(this, t -> {
+            if (t != null) {
                 showError(t);
-                if(SLog.LOG)SLog.e("Main", "Error: " + t.getMessage());
+                if (SLog.LOG) SLog.e("Main", "Error: " + t.getMessage());
             } else {
-                if(SLog.LOG)SLog.e("Main", "MainActivity observe error update with null");
+                if (SLog.LOG) SLog.e("Main", "MainActivity observe error update with null");
             }
         });
 
 
         //observe location info data updates
-        viewModel.getPositionInfo().observe(this, positionInfo-> {
+        viewModel.getPositionInfo().observe(this, positionInfo -> {
             try {
                 if (MainViewModel.AUTO_BRIGHTNESS) {
                     //control brightness if we are user server locations
@@ -185,21 +189,20 @@ public class MainActivity extends net.chetch.appframework.GenericActivity  imple
                         }
                     } catch (SettingNotFoundException ex) {
                         //just don't set the brightness (cos not that important)
-                        if(SLog.LOG)SLog.e(LOG_TAG, ex.getMessage());
+                        if (SLog.LOG) SLog.e(LOG_TAG, ex.getMessage());
                     } catch (Exception ex) {
-                        if(SLog.LOG)SLog.e(LOG_TAG, ex.getMessage());
+                        if (SLog.LOG) SLog.e(LOG_TAG, ex.getMessage());
                     }
                 } //end auto brigthness
 
                 //check for a pause in requesting location list updates
                 if (pauseLocationUpdates != null && Utils.dateDiff(Calendar.getInstance(), pauseLocationUpdates, TimeUnit.SECONDS) < 30) {
-                    if(SLog.LOG)SLog.i(LOG_TAG, "Location updates paused");
+                    if (SLog.LOG) SLog.i(LOG_TAG, "Location updates paused");
                     return;
                 }
 
                 //enough time has elapsed without user interaction so we can close various things
-                closeLocationInfo();
-                ((Spinner2) findViewById(R.id.surfLocation)).close();
+                closeLocationsDialog();
                 ViewPager viewPager = findViewById(R.id.viewPager);
                 viewPager.setCurrentItem(0);
 
@@ -209,92 +212,70 @@ public class MainActivity extends net.chetch.appframework.GenericActivity  imple
                 float distance = lastGPSPosition == null ? -1 : lastGPSPosition.distanceTo(currentPos);
                 if (lastGPSPosition == null || distance > 500 || Utils.dateDiff(Calendar.getInstance(), lastGPSPositionUpdated, TimeUnit.SECONDS) > 5 * 60) {
                     if (lastGPSPosition != null)
-                        if(SLog.LOG)SLog.i(LOG_TAG, "Location changed " + distance + " meters since " + Utils.dateDiff(Calendar.getInstance(), lastGPSPositionUpdated, TimeUnit.SECONDS) + " seconds ago");
+                        if (SLog.LOG)
+                            SLog.i(LOG_TAG, "Location changed " + distance + " meters since " + Utils.dateDiff(Calendar.getInstance(), lastGPSPositionUpdated, TimeUnit.SECONDS) + " seconds ago");
                     lastGPSPosition = currentPos;
                     lastGPSPositionUpdated = Calendar.getInstance();
                 } else if (pauseLocationUpdates == null) {
-                    if(SLog.LOG)SLog.i(LOG_TAG, "Location not significantly updated ... distance traveled " + distance + " meters since " + Utils.dateDiff(Calendar.getInstance(), lastGPSPositionUpdated, TimeUnit.SECONDS) + " seconds ago");
+                    if (SLog.LOG)
+                        SLog.i(LOG_TAG, "Location not significantly updated ... distance traveled " + distance + " meters since " + Utils.dateDiff(Calendar.getInstance(), lastGPSPositionUpdated, TimeUnit.SECONDS) + " seconds ago");
                     return;
                 }
 
                 //by here we know we should request the list of nearby locations
                 viewModel.getLocationsNearby(currentPos);
-            } catch (Exception e){
-                if(SLog.LOG)SLog.e("Main", e.getMessage());
+            } catch (Exception e) {
+                if (SLog.LOG) SLog.e("Main", e.getMessage());
                 showError(0, e.getMessage());
             }
         });
 
 
-        //observe new list of locations
-        viewModel.getLocationsNearby().observe(this, locations->{
-            if(isErrorShowing()){
+        //observe new list of locations ... this is updated when position info changes
+        viewModel.getLocationsNearby().observe(this, locations -> {
+            //we have a fresh list of surf spots nearby the current location...
+            if (isErrorShowing()) {
                 dismissError();
             }
 
-            //now fill in the locations
-            if(SLog.LOG)SLog.i(LOG_TAG,"Retrieved " + locations.size() + " locations from server");
-            if(locations.size() == 0)return;
+            //log and check for edge conditions
+            if (SLog.LOG)
+                SLog.i(LOG_TAG, "Retrieved " + locations.size() + " locations from server");
 
-            Spinner2 locationsSpinnner = findViewById(R.id.surfLocation);
-            if(locationsSpinnner.isOpen())return;
+            if (locations.size() == 0) return;
 
-            List<String> spinnerList = new ArrayList<>();
-            for (Location loc : locations) {
-                spinnerList.add(loc.getLocation() + " (" + Utils.convert(loc.getDistance(), Utils.Conversions.KM_2_MILES, 1) + " miles)");
+            //here we have a definite list of surf locations ordered by closest first
+            setCurrentLocation(locations.get(0));
+
+            boolean forecastHasChanged = currentForecast == null || (currentForecast.getFeedRunID() != currentLocation.getLastFeedRunID()) || currentForecast.getLocationID() != currentLocation.getID();
+            long secsSinceForecastRetrieved = forecastLastRetrieved == null ? -1 : Utils.dateDiff(Calendar.getInstance(), forecastLastRetrieved, TimeUnit.SECONDS);
+            if (forecastHasChanged || secsSinceForecastRetrieved > 60 * 60) {
+                if (SLog.LOG)
+                    SLog.i(LOG_TAG, "Retrieving forecast because " + (forecastHasChanged ? "it has changed" : "last retrieved " + secsSinceForecastRetrieved + " secs ago"));
+                setPauseLocationUpdates(true);
+                showProgress();
+                hideSurfConditions();
+                viewModel.getForecast(currentLocation.getID());
+            } else {
+                setPauseLocationUpdates(false);
+                if (Utils.dateDiff(Calendar.getInstance(), forecastLastDisplayed, TimeUnit.SECONDS) > 10 * 60) {
+                    showForecast(currentForecast); //this is to allow for time updates
+                    if (SLog.LOG)
+                        SLog.i(LOG_TAG, "Re-showing forecast to allow for time changes");
+                }
             }
 
-            ArrayAdapter<String> adapter = new ArrayAdapter<>(this, R.layout.spinner_item, spinnerList);
-            adapter.setDropDownViewResource(R.layout.spinner_dropdown);
-            locationsSpinnner.setAdapter(adapter);
-            locationsSpinnner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-                @Override
-                public void onItemSelected(AdapterView<?> parentView, View selectedItemView, int position, long id) {
-                    try {
-                        if (position < locations.size()) {
-                            Location selectedLocation = locations.get(position);
-                            if (selectedLocation.getLastFeedRunID() == 0) {
-                                showError(0, "Location " + selectedLocation.getLocation() + " does not have a forecast");
-                                if(SLog.LOG)SLog.e(LOG_TAG, "Location " + selectedLocation.getLocation() + " does not have a forecast");
-                                return;
-                            }
-
-                            boolean forecastHasChanged = currentForecast == null || (currentForecast.getFeedRunID() != selectedLocation.getLastFeedRunID()) || currentForecast.getLocationID() != selectedLocation.getID();
-                            long secsSinceForecastRetrieved = forecastLastRetrieved == null ? -1 : Utils.dateDiff(Calendar.getInstance(), forecastLastRetrieved, TimeUnit.SECONDS);
-                            if (forecastHasChanged || secsSinceForecastRetrieved > 60 * 60) {
-                                if(SLog.LOG)SLog.i(LOG_TAG, "Retrieving forecast because " + (forecastHasChanged ? "it has changed" : "last retrieved " + secsSinceForecastRetrieved + " secs ago"));
-                                setPauseLocationUpdates(true);
-                                showProgress();
-                                hideSurfConditions();
-                                viewModel.getForecast(selectedLocation.getID());
-                            } else {
-                                setPauseLocationUpdates(false);
-                                if (Utils.dateDiff(Calendar.getInstance(), forecastLastDisplayed, TimeUnit.SECONDS) > 10 * 60) {
-                                    showForecast(currentForecast); //this is to allow for time updates
-                                    if(SLog.LOG)SLog.i(LOG_TAG, "Re-showing forecast to allow for time changes");
-                                }
-                            }
-                        }
-                    } catch (Exception e){
-                        showError(0, e.getMessage());
-                    }
-                }
-
-                @Override
-                public void onNothingSelected(AdapterView<?> parentView) {
-                    // your code here
-                }
-            });
         }); //end observe nearby locations data
 
         //observe new forecast data
-        viewModel.getForecast().observe(this, forecast->{
+        viewModel.getForecast().observe(this, forecast -> {
+            if (SLog.LOG) SLog.i(LOG_TAG, "Forecast retrieved");
             forecastLastRetrieved = Calendar.getInstance();
             showForecast(forecast);
         });
 
         Logger.info("Main activity created with: use_device_location=" + MainViewModel.USE_DEVICE_LOCATION + ", auto_brightness=" + MainViewModel.AUTO_BRIGHTNESS + " and display type=" + DISPLAY_TYPE);
-        if(SLog.LOG)SLog.i(LOG_TAG, "onCreate ended");
+        if (SLog.LOG) SLog.i(LOG_TAG, "onCreate ended");
 
         //start loading in data
         showProgress();
@@ -302,39 +283,44 @@ public class MainActivity extends net.chetch.appframework.GenericActivity  imple
             viewModel.loadData(dataLoadProgress).observe(services -> {
                 startLocationUpdates(false);
             });
-        } catch (Exception  e){
+        } catch (Exception e) {
             showError(0, e.getMessage());
             String errMsg = e.getMessage();
-            if(errMsg == null){
+            if (errMsg == null) {
                 errMsg = e.getClass().toString() + " did not have an error message";
             }
-            if(SLog.LOG)SLog.e("Main", errMsg);
+            if (SLog.LOG) SLog.e("Main", errMsg);
         }
 
 
     } //end onCreate
 
+    private void setCurrentLocation(Location location){
+        TextView locationTitle = findViewById(R.id.surfLocationTitle);
+        locationTitle.setText(location.getLocationAndDistance() + " ... ");
+        currentLocation = location;
+    }
 
     @Override
     public void showError(int errorCode, String errorMessage) {
-        if(MainViewModel.SUPPRESS_ERRORS){
+        if (MainViewModel.SUPPRESS_ERRORS) {
             Logger.error(errorMessage);
         } else {
             super.showError(errorCode, errorMessage);
         }
     }
 
-    private void startLocationUpdates(boolean restart){
+    private void startLocationUpdates(boolean restart) {
         lastGPSPosition = null;
         setPauseLocationUpdates(false);
         stopTimer();
 
-        if(MainViewModel.USE_DEVICE_LOCATION) {
-            LocationManager locationManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
+        if (MainViewModel.USE_DEVICE_LOCATION) {
+            LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
             locationListener = new LocationListener() {
                 @Override
                 public void onLocationChanged(android.location.Location location) {
-                    if(currentDeviceLocation == null && location != null){
+                    if (currentDeviceLocation == null && location != null) {
                         viewModel.setGPSPositionFromLocation(location);
                     }
                     currentDeviceLocation = location;
@@ -355,6 +341,15 @@ public class MainActivity extends net.chetch.appframework.GenericActivity  imple
 
                 }
             };
+
+
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                // TODO: Consider calling
+                //    ActivityCompat#requestPermissions
+                showError("Cannot use device location as permissions have not been properly set.");
+                return;
+            }
+
             locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 10000, 10, locationListener);
             if(currentDeviceLocation == null){
                 currentDeviceLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
@@ -434,7 +429,6 @@ public class MainActivity extends net.chetch.appframework.GenericActivity  imple
         int colour = getResources().getColor(colourID);
         forecastInfo.setTextColor(colour);
 
-
         hideProgress();
         if(!expired) {
             ViewPager viewPager = findViewById(R.id.viewPager);
@@ -497,6 +491,12 @@ public class MainActivity extends net.chetch.appframework.GenericActivity  imple
                 }
             }
             if(SLog.LOG)SLog.i(LOG_TAG, "Error dialog onDialogPositiveClick");
+        } else if(dialog instanceof LocationsDialogFragment){
+            setCurrentLocation(((LocationsDialogFragment)dialog).location);
+            setPauseLocationUpdates(true);
+            showProgress();
+            hideSurfConditions();
+            viewModel.getForecast(currentLocation.getID());
         }
     }
 
@@ -533,18 +533,21 @@ public class MainActivity extends net.chetch.appframework.GenericActivity  imple
     }
 
 
-    public void openLocationInfo(Location location){
-        if(SLog.LOG)SLog.i(LOG_TAG, "Open location info");
-        locationDialog = new LocationDialogFragment();
-        locationDialog.location = location;
-        locationDialog.show(getSupportFragmentManager(), "LocationDialog");
+    public void openLocationsDialog(Locations locations){
+        if(SLog.LOG)SLog.i(LOG_TAG, "Open locations");
+        locationsDialog = new LocationsDialogFragment();
+        locationsDialog.locations = locations;
+        locationsDialog.show(getSupportFragmentManager(), "LocationsDialog");
         setPauseLocationUpdates(true);
     }
 
-    public void closeLocationInfo(){
-        if(locationDialog != null)locationDialog.dismiss();
-        locationDialog = null;
+    public void closeLocationsDialog(){
+        if(locationsDialog  !=  null){
+            locationsDialog.dismiss();
+            locationsDialog = null;
+        }
     }
+
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults){

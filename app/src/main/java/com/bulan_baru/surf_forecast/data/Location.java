@@ -1,5 +1,6 @@
 package com.bulan_baru.surf_forecast.data;
 
+import net.chetch.utilities.Utils;
 import net.chetch.webservices.DataObject;
 
 public class Location extends DataObject {
@@ -18,6 +19,10 @@ public class Location extends DataObject {
     }
     public String getLocation(){
         return getCasted("location");
+    }
+    public String getLocationAndDistance(){
+        String s = getLocation() + " (" + Utils.convert(getDistance(), Utils.Conversions.KM_2_MILES, 1) + " miles)";
+        return s;
     }
 
     public void setLatitude(double latitude){ setValue("latitude", latitude); }
