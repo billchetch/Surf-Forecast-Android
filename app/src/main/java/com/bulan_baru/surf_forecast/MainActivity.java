@@ -295,6 +295,18 @@ public class MainActivity extends net.chetch.appframework.GenericActivity implem
 
     } //end onCreate
 
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if(SLog.LOG)SLog.i(LOG_TAG, "onPause called");
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if(SLog.LOG)SLog.i(LOG_TAG, "onResume called");
+    }
+
     private void setCurrentLocation(Location location){
         TextView locationTitle = findViewById(R.id.surfLocationTitle);
         locationTitle.setText(location.getLocationAndDistance() + " ... ");
@@ -369,8 +381,9 @@ public class MainActivity extends net.chetch.appframework.GenericActivity implem
 
     @Override
     protected int onTimer(){
+        int nextTimer = 30;
+
         try {
-            int nextTimer = 30;
             if (MainViewModel.USE_DEVICE_LOCATION) {
                 if (currentDeviceLocation != null) {
                     viewModel.setGPSPositionFromLocation(currentDeviceLocation);
