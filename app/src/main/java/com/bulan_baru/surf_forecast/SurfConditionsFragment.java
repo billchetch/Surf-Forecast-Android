@@ -1,31 +1,42 @@
 package com.bulan_baru.surf_forecast;
 
 import android.os.Bundle;
+
+import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.bulan_baru.surf_forecast.data.Forecast;
 import com.bulan_baru.surf_forecast.data.ForecastDay;
+import com.bulan_baru.surf_forecast.data.ForecastDetail;
 import com.bulan_baru.surf_forecast.data.ForecastHour;
 
 import net.chetch.utilities.SLog;
 import net.chetch.utilities.Utils;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Calendar;
+import java.util.Map;
 
 public class SurfConditionsFragment extends Fragment {
-    private final static String LOG_TAG = "Surf Conditions Fragment";
+    private final static String LOG_TAG = "ConditionsFragment";
+    private final static String DATE_KEY_FORMAT = "yyyy-MM-dd";
 
     private Forecast forecast;
     private Calendar forecastDate;
     private List<ForecastHour> forecastHours;
     private List<ForecastDay> forecastDays;
+    private HashMap<String, ForecastDay> forecastDaysMap = new HashMap<>();
+    private HashMap<ForecastHour, View> hours2surfConditionViews = new HashMap<>();
+    private boolean viewUpdated = false;
+
     private static final String[] tidePositions = new String[]{"Low (rising)","Low to Mid","Mid (rising)","Mid to High","High (rising)","High (dropping)","High to Mid", "Mid (dropping)", "Mid to Low", "Low (dropping)"};
     private static int[] starIDs = new int[]{R.id.star1, R.id.star2, R.id.star3, R.id.star4, R.id.star5};
 
@@ -44,6 +55,10 @@ public class SurfConditionsFragment extends Fragment {
             throw new NullPointerException("forecastDays cannot be null");
         }
         this.forecastDate = cal;
+
+        for(ForecastDay fd : forecastDays){
+            forecastDaysMap.put(Utils.formatDate(fd.date, DATE_KEY_FORMAT), fd);
+        }
     }
 
     @Override
@@ -75,10 +90,12 @@ public class SurfConditionsFragment extends Fragment {
 
         //get the layout for the hours conditions and add fragments
         ViewGroup surfConditionsLayout = rootView.findViewById(R.id.surfConditionsLayout);
+        hours2surfConditionViews.clear();
         for(int i = 0; i < forecastHours.size(); i++) {
             ForecastHour fh = forecastHours.get(i);
 
             View sc = inflater.inflate(R.layout.surf_conditions, surfConditionsLayout, false);
+            hours2surfConditionViews.put(fh, sc);
 
             try {
                 //title
@@ -133,13 +150,14 @@ public class SurfConditionsFragment extends Fragment {
                 String wd = Utils.convert(deg, Utils.Conversions.DEG_2_COMPASS) + " (" + deg + " deg)";
 
                 //tide data
-                String th = Utils.convert(Double.parseDouble(fh.getTideHeight()), Utils.Conversions.METERS_2_FEET, 0) + " ft";
+                double tideHeight = Double.parseDouble(fh.getTideHeight());
+                String th = Utils.convert(tideHeight, Utils.Conversions.METERS_2_FEET, 0) + " ft";
                 String ts = fh.getTidePosition() != null ? tidePositions[fh.getTidePosition()] : "";
                 iv = sc.findViewById(R.id.tideDirection);
                 iv.setRotation(fh.getTidePosition() < 5 ? 0f : 180f);
                 iv.setAlpha(alpha);
 
-                //set the display
+                //set the text to display
                 TextView tv = sc.findViewById(R.id.conditionsTitle);
                 tv.setText(title);
                 tv.setAlpha(alpha);
@@ -169,6 +187,46 @@ public class SurfConditionsFragment extends Fragment {
             }
         }
 
+        viewUpdated = false;
+
+        ViewTreeObserver vto = rootView.getViewTreeObserver();
+        vto.addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+            @Override
+            public void onGlobalLayout() {
+                //vto.removeGlobalOnLayoutListener(this);
+                updateView();
+
+            }
+        });
+
         return rootView;
+    }
+
+
+    private void updateView(){
+        if(viewUpdated)return;
+        viewUpdated = true;
+
+        for(Map.Entry<ForecastHour, View> entry :  hours2surfConditionViews.entrySet()){
+            try {
+                ForecastHour fh = entry.getKey();
+                View sc = entry.getValue();
+                ForecastDay fd = forecastDaysMap.get(Utils.formatDate(fh.date, DATE_KEY_FORMAT));
+                double tideHeight = Double.parseDouble(fh.getTideHeight());
+
+                ImageView tideSnapshotBorder = sc.findViewById(R.id.currentTideBorder);
+                int borderHeight = tideSnapshotBorder.getHeight();
+                ImageView tideSnapshotBar = sc.findViewById(R.id.currentTidePosition);
+
+                double maxTideHeight = fd.getMaxTideHeight();
+                int barHeight = (int) (borderHeight * Math.min(1.0f, tideHeight / maxTideHeight));
+                if (SLog.LOG) SLog.i(LOG_TAG, "Setting tide bar height to: " + barHeight);
+                tideSnapshotBar.getLayoutParams().height = barHeight;
+                tideSnapshotBar.setVisibility(View.VISIBLE);
+                tideSnapshotBar.requestLayout();
+            } catch(Exception e){
+                if(SLog.LOG)Log.e(LOG_TAG, e.getMessage());
+            }
+        }
     }
 }

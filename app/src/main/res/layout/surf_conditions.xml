@@ -30,7 +30,7 @@
         android:layout_marginLeft="8dp"
         android:gravity="left|center_vertical"
         android:text="TextView"
-        android:textColor="@color/lightGrey"
+        android:textColor="@color/bluegreen2"
         android:textSize="20sp"
         android:textStyle="bold"
         app:layout_constraintStart_toStartOf="parent"
@@ -97,8 +97,8 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/tideLayout"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
+        android:layout_height="30dp"
+        android:layout_marginTop="12dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/swellDirection">
@@ -107,7 +107,9 @@
             android:id="@+id/tideDirection"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            app:layout_constraintStart_toStartOf="parent"
+            android:layout_marginStart="4dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/tideSnapshot"
             app:layout_constraintTop_toTopOf="parent"
             app:srcCompat="@drawable/ic_round_arrow_up_24px" />
 
@@ -119,8 +121,18 @@
             android:text="Tide"
             android:textColor="@color/lightGrey"
             android:textSize="18dp"
+            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toEndOf="@+id/tideDirection"
             app:layout_constraintTop_toTopOf="parent" />
+
+        <include
+            android:id="@+id/tideSnapshot"
+            layout="@layout/tide_snapshot"
+            android:layout_width="12dp"
+            android:layout_height="30dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
     </androidx.constraintlayout.widget.ConstraintLayout>
 
     <ImageView

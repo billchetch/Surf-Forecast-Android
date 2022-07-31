@@ -56,6 +56,11 @@ public class ForecastDay extends ForecastDetail {
     @SerializedName("last_light")
     private Calendar lastLight;
 
+    private boolean extremesset = false;
+
+    private double maxTideHeight;
+    private double minTideHeight;
+
     @Override
     public void applyTimeZone(TimeZone tz){
         super.applyTimeZone(tz);
@@ -83,13 +88,39 @@ public class ForecastDay extends ForecastDetail {
                 td.time = Utils.parseDate(dt, Webservice.DEFAULT_DATE_FORMAT);
                 td.time.setTimeZone(getTimeZone());
                 tideData.add(td);
+
+                if(i == 0){
+                    minTideHeight = td.height;
+                    maxTideHeight = td.height;
+                } else {
+                    if(td.height < minTideHeight)minTideHeight = td.height;
+                    if(td.height > maxTideHeight)maxTideHeight = td.height;
+                }
             } catch (Exception e){
                 if(SLog.LOG) SLog.e("ForecastDay", e.getMessage());
             }
         }
+
+        extremesset = true;
+
         return tideData;
     }
 
+    public double getMaxTideHeight(){
+        if(!extremesset) {
+            getTideData();
+        }
+
+        return maxTideHeight;
+    }
+
+    public double getMinTideHeight(){
+        if(!extremesset) {
+            getTideData();
+        }
+
+        return minTideHeight;
+    }
 
     public Calendar getFirstLight(){
         return firstLight;
