@@ -1,8 +1,13 @@
 package com.bulan_baru.surf_forecast;
 
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.ShapeDrawable;
 import android.os.Bundle;
 
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -113,6 +118,8 @@ public class SurfConditionsFragment extends Fragment {
                 } else if (fh.getRating() != null) {
                     rating = (int) Math.round(Double.parseDouble(fh.getRating()));
                 }
+
+
                 for (int j = 1; j <= starIDs.length; j++) {
                     ImageView iv = sc.findViewById(starIDs[j - 1]);
                     iv.setVisibility(j <= rating ? View.VISIBLE : View.INVISIBLE);

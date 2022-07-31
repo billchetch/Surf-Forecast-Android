@@ -150,7 +150,7 @@
         android:visibility="invisible"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:srcCompat="@drawable/ic_round_star_rate_18px" />
+        app:srcCompat="@drawable/ic_round_star_rate2_18px" />
 
     <ImageView
         android:id="@+id/star2"
@@ -161,7 +161,7 @@
         android:visibility="invisible"
         app:layout_constraintEnd_toStartOf="@+id/star1"
         app:layout_constraintTop_toTopOf="parent"
-        app:srcCompat="@drawable/ic_round_star_rate_18px" />
+        app:srcCompat="@drawable/ic_round_star_rate2_18px" />
 
     <ImageView
         android:id="@+id/star3"
@@ -172,7 +172,7 @@
         android:visibility="invisible"
         app:layout_constraintEnd_toStartOf="@+id/star2"
         app:layout_constraintTop_toTopOf="parent"
-        app:srcCompat="@drawable/ic_round_star_rate_18px" />
+        app:srcCompat="@drawable/ic_round_star_rate2_18px" />
 
     <ImageView
         android:id="@+id/star4"
@@ -183,7 +183,7 @@
         android:visibility="invisible"
         app:layout_constraintEnd_toStartOf="@+id/star3"
         app:layout_constraintTop_toTopOf="parent"
-        app:srcCompat="@drawable/ic_round_star_rate_18px" />
+        app:srcCompat="@drawable/ic_round_star_rate2_18px" />
 
     <ImageView
         android:id="@+id/star5"
@@ -194,7 +194,7 @@
         android:visibility="invisible"
         app:layout_constraintEnd_toStartOf="@+id/star4"
         app:layout_constraintTop_toTopOf="parent"
-        app:srcCompat="@drawable/ic_round_star_rate_18px" />
+        app:srcCompat="@drawable/ic_round_star_rate2_18px" />
 
     <include
         android:id="@+id/tideSnapshot"

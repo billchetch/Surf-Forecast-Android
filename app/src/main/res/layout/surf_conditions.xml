@@ -155,7 +155,7 @@
         android:visibility="invisible"
         app:layout_constraintEnd_toStartOf="@+id/star1"
         app:layout_constraintTop_toTopOf="parent"
-        app:srcCompat="@drawable/ic_round_star_rate_18px" />
+        app:srcCompat="@drawable/ic_round_star_rate2_18px" />
 
     <ImageView
         android:id="@+id/star3"
