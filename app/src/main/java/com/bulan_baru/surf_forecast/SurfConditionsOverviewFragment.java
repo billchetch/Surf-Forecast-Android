@@ -60,14 +60,18 @@ public class SurfConditionsOverviewFragment extends Fragment implements OnClickL
     protected void onTimer(){
         if(SLog.LOG) SLog.i("SCOF TIMER", "timer");
 
-        if(expanded){
-            if(MainActivity.DISPLAY_TYPE == MainActivity.DisplayType.TABLET) {
-                collapse();
-            } else {
-                drawGraphViews(true, false);
-            }
-        }
 
+        try {
+            if (expanded) {
+                if (MainActivity.DISPLAY_TYPE == MainActivity.DisplayType.TABLET) {
+                    collapse();
+                } else {
+                    drawGraphViews(true, false);
+                }
+            }
+        } catch (Exception e){
+            if(SLog.LOG)SLog.e("SCOF TIMER", e.getMessage());
+        }
     }
 
     class GraphSegment{

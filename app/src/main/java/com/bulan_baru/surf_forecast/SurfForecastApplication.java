@@ -101,20 +101,4 @@ public class SurfForecastApplication extends ChetchApplication {
     public void setRestartAfter(int restartAfter){
         this.restartAfter = restartAfter;
     }
-
-    public void restartApp(int delayInSecs){
-        Intent intent = getPackageManager().getLaunchIntentForPackage( getPackageName() );
-
-        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        startActivity(intent);
-
-        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, intent.getFlags());
-
-        AlarmManager mgr = (AlarmManager) getBaseContext().getSystemService(Context.ALARM_SERVICE);
-        mgr.set(AlarmManager.RTC, System.currentTimeMillis() + 1000*delayInSecs, pendingIntent);
-
-        Logger.info("Restarting app in " + delayInSecs + " seconds");
-        System.exit(0);
-    }
 }
