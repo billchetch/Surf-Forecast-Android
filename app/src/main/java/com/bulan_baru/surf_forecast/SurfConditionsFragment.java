@@ -141,19 +141,19 @@ public class SurfConditionsFragment extends Fragment {
                 } else {
                     float swellDirection = Float.parseFloat(swd);
                     iv.setVisibility(View.VISIBLE);
-                    iv.setRotation(swellDirection);
+                    iv.setRotation((swellDirection + 180) % 360);
                     iv.setAlpha(alpha);
-                    deg = (int) ((swellDirection + 180) % 360);
+                    deg = (int) swellDirection;
                     sd = Utils.convert(deg, Utils.Conversions.DEG_2_COMPASS) + " (" + deg + " deg)";
                 }
 
                 //wind direction
                 float windDirection = Float.parseFloat(fh.getWindDirection());
                 iv = sc.findViewById(R.id.windDirectionIcon);
-                iv.setRotation(windDirection);
+                iv.setRotation((windDirection + 180) % 360);
                 iv.setAlpha(alpha);
                 String ws = Utils.convert(fh.getWindSpeed(), Utils.Conversions.KPH_2_MPH, 0) + " mph";
-                deg = (int) ((windDirection + 180) % 360);
+                deg = (int) windDirection;
                 String wd = Utils.convert(deg, Utils.Conversions.DEG_2_COMPASS) + " (" + deg + " deg)";
 
                 //tide data
