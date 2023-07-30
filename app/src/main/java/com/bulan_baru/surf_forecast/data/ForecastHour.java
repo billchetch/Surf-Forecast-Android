@@ -55,7 +55,7 @@ public class ForecastHour extends ForecastDetail {
         return tideHeight.getString();
     }
 
-    public Integer getTidePosition(){ return tidePosition; }
+    public Integer getTidePosition(){ return tidePosition == null ? 0 : tidePosition; }
 
     public String getRating(){ return rating.getString(); }
 

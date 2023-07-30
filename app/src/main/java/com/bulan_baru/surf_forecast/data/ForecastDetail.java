@@ -29,7 +29,7 @@ public class ForecastDetail {
         private String weighted_average;
 
         public String getString(){
-            return weighted_average;
+            return weighted_average == null ? "0" : weighted_average;
         }
     }
 

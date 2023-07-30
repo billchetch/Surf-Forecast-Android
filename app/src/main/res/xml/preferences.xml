@@ -18,7 +18,6 @@
         android:entries="@array/settings.restart_after.labels"
         android:entryValues="@array/settings.restart_after.values"
         android:key="restart_after"
-        android:numeric="integer"
         android:summary="@string/settings.restart_after.prompt"
         android:title="Restart After (hours)" />
 

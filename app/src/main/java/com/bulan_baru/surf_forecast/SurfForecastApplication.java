@@ -58,7 +58,7 @@ public class SurfForecastApplication extends ChetchApplication {
             //set default prefs and API Base URL
             PreferenceManager.setDefaultValues(this, R.xml.preferences, true);
             SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
-            //string apiBaseURL = sharedPref.getString("api_base_url", null);
+            //String apiBaseURL = sharedPref.getString("api_base_url", null);
             String apiBaseURL = "http://192.168.1.103:8001/api";
 
             if(SLog.LOG) SLog.i("Application", "Services API URL: " + apiBaseURL);
@@ -76,7 +76,8 @@ public class SurfForecastApplication extends ChetchApplication {
             float maxDistance = sharedPref.getFloat("max_distance", -1);
             SurfForecastRepository.getInstance().setMaxDistance(maxDistance);
 
-            restartAfter = sharedPref.getInt("restart_app_after", 12);
+            //Some kind of bug here if we try to use getInt so yeah getString then parseInt
+            restartAfter = Integer.parseInt(sharedPref.getString("restart_after", "12"));
 
             //fire up timer
             timerHandler.postDelayed(timerRunnable, TIMER_DELAY_IN_MILLIS);

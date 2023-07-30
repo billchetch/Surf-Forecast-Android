@@ -42,6 +42,7 @@ import net.chetch.utilities.Logger;
 import net.chetch.utilities.SLog;
 import net.chetch.utilities.Spinner2;
 import net.chetch.utilities.Utils;
+import net.chetch.webservices.Webservice;
 import net.chetch.webservices.WebserviceViewModel;
 import net.chetch.webservices.exceptions.WebserviceException;
 import net.chetch.webservices.gps.GPSPosition;
@@ -583,6 +584,22 @@ public class MainActivity extends net.chetch.appframework.GenericActivity implem
             case REQUEST_LOCATION_PERMISSION:
                 ((SurfForecastApplication) getApplication()).restartApp(1);
                 break;
+        }
+    }
+
+    @Override
+    public void openAbout() {
+        super.openAbout();
+        try {
+            String lf = "\n";
+            String s = "GPS position: " + lastGPSPosition.getLatitude() + "," + lastGPSPosition.getLongitude() + lf;
+            s += "GPS updated on: " + Utils.formatDate(lastGPSPositionUpdated, Webservice.DEFAULT_DATE_FORMAT) + lf;
+            s += "Last Feed Run ID: " + currentForecast.getFeedRunID() + lf;
+            s += "Last Forecast Requested: " + Utils.formatDate(forecastLastRetrieved, Webservice.DEFAULT_DATE_FORMAT) + lf;
+            aboutDialog.aboutBlurb = s;
+
+        } catch (Exception e){
+
         }
     }
 }
