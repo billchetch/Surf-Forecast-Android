@@ -58,8 +58,8 @@ public class SurfForecastApplication extends ChetchApplication {
             //set default prefs and API Base URL
             PreferenceManager.setDefaultValues(this, R.xml.preferences, true);
             SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
-            //String apiBaseURL = sharedPref.getString("api_base_url", null);
-            String apiBaseURL = "http://192.168.1.103:8001/api";
+            String apiBaseURL = sharedPref.getString("api_base_url", null);
+            //String apiBaseURL = "http://192.168.1.103:8001/api";
 
             if(SLog.LOG) SLog.i("Application", "Services API URL: " + apiBaseURL);
             NetworkRepository.getInstance().setAPIBaseURL(apiBaseURL);
@@ -101,5 +101,9 @@ public class SurfForecastApplication extends ChetchApplication {
 
     public void setRestartAfter(int restartAfter){
         this.restartAfter = restartAfter;
+    }
+
+    public long getUpTime(){
+        return Calendar.getInstance().getTimeInMillis() - appStarted.getTimeInMillis();
     }
 }

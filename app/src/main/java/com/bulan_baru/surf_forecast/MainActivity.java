@@ -592,7 +592,10 @@ public class MainActivity extends net.chetch.appframework.GenericActivity implem
         super.openAbout();
         try {
             String lf = "\n";
-            String s = "GPS position: " + lastGPSPosition.getLatitude() + "," + lastGPSPosition.getLongitude() + lf;
+            SurfForecastApplication app = (SurfForecastApplication)getApplication();
+            String s = "";
+            s += "App uptime: " + Utils.formatDuration(app.getUpTime(), Utils.DurationFormat.DAYS_HOURS_MINS_SECS) + lf;
+            s += "GPS position: " + lastGPSPosition.getLatitude() + "," + lastGPSPosition.getLongitude() + lf;
             s += "GPS updated on: " + Utils.formatDate(lastGPSPositionUpdated, Webservice.DEFAULT_DATE_FORMAT) + lf;
             s += "Last Feed Run ID: " + currentForecast.getFeedRunID() + lf;
             s += "Last Forecast Requested: " + Utils.formatDate(forecastLastRetrieved, Webservice.DEFAULT_DATE_FORMAT) + lf;
