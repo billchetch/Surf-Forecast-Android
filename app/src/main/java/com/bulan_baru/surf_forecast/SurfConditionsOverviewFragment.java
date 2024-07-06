@@ -530,7 +530,7 @@ public class SurfConditionsOverviewFragment extends Fragment implements OnClickL
         expanded = expand;
 
         ImageView iv = rootView.findViewById(R.id.expandIcon);
-        iv.setImageResource(expanded ? R.drawable.ic_round_expand_less_24px : R.drawable.ic_round_expand_more_24px);
+        iv.setImageResource(expanded ? net.chetch.appresources.R.drawable.ic_round_expand_less_24px : net.chetch.appresources.R.drawable.ic_round_expand_more_24px);
 
         boolean today = Utils.isToday(forecastDays.get(0).date);
         drawGraphViews(expanded, today);
