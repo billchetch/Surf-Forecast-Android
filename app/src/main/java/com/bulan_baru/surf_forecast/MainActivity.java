@@ -91,8 +91,11 @@ public class MainActivity extends net.chetch.appframework.GenericActivity implem
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-
+        try {
+            setContentView(R.layout.activity_main);
+        } catch(Exception e){
+            e.printStackTrace();
+        }
         //do permissions first cos these require a restart
         if (MainViewModel.USE_DEVICE_LOCATION && !permissionGranted(Manifest.permission.ACCESS_FINE_LOCATION)) {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_LOCATION_PERMISSION);

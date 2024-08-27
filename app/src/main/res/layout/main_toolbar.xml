@@ -14,13 +14,14 @@
 
         <ImageView
             android:id="@+id/logo"
-            style="@style/AppFramework.Dark.NoActionBar.ActionBar.Logo"
             android:layout_width="34dp"
             android:layout_height="34dp"
             android:layout_weight="0"
+            android:src="@color/black"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintTop_toTopOf="parent"
+            app:srcCompat="@drawable/ic_logo_bulan_baru_white_small" />
 
         <TextView
             android:id="@+id/surfLocationTitle"
